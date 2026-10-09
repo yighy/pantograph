@@ -2,7 +2,7 @@
 
 All notable changes to Pantograph. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and versions follow [Semantic Versioning](https://semver.org/). Full notes for each version are on the
-[releases page](https://github.com/yighy/Pantograph/releases).
+[releases page](https://github.com/yighy/pantograph/releases).
 
 > Before 1.0, an update that changes the storage format clears your projects. Those versions are marked
 > **Clears projects** below.
@@ -157,19 +157,19 @@ and versions follow [Semantic Versioning](https://semver.org/). Full notes for e
 
 Initial release.
 
-[Unreleased]: https://github.com/yighy/Pantograph/compare/v0.18.0...HEAD
-[0.18.0]: https://github.com/yighy/Pantograph/compare/v0.17.2...v0.18.0
-[0.17.2]: https://github.com/yighy/Pantograph/compare/v0.17.1...v0.17.2
-[0.17.1]: https://github.com/yighy/Pantograph/compare/v0.17.0...v0.17.1
-[0.17.0]: https://github.com/yighy/Pantograph/compare/v0.16.2...v0.17.0
-[0.16.2]: https://github.com/yighy/Pantograph/compare/v0.16.1...v0.16.2
-[0.16.1]: https://github.com/yighy/Pantograph/compare/v0.16.0...v0.16.1
-[0.16.0]: https://github.com/yighy/Pantograph/compare/v0.15.0...v0.16.0
-[0.15.0]: https://github.com/yighy/Pantograph/compare/v0.14.0...v0.15.0
-[0.14.0]: https://github.com/yighy/Pantograph/compare/v0.13.0...v0.14.0
-[0.13.0]: https://github.com/yighy/Pantograph/compare/v0.12.1...v0.13.0
-[0.12.1]: https://github.com/yighy/Pantograph/compare/v0.12.0...v0.12.1
-[0.12.0]: https://github.com/yighy/Pantograph/compare/v0.11.0...v0.12.0
-[0.11.0]: https://github.com/yighy/Pantograph/compare/v0.10.0...v0.11.0
-[0.10.0]: https://github.com/yighy/Pantograph/compare/v0.9.1...v0.10.0
-[0.9.1]: https://github.com/yighy/Pantograph/releases/tag/v0.9.1
+[Unreleased]: https://github.com/yighy/pantograph/compare/v0.18.0...HEAD
+[0.18.0]: https://github.com/yighy/pantograph/compare/v0.17.2...v0.18.0
+[0.17.2]: https://github.com/yighy/pantograph/compare/v0.17.1...v0.17.2
+[0.17.1]: https://github.com/yighy/pantograph/compare/v0.17.0...v0.17.1
+[0.17.0]: https://github.com/yighy/pantograph/compare/v0.16.2...v0.17.0
+[0.16.2]: https://github.com/yighy/pantograph/compare/v0.16.1...v0.16.2
+[0.16.1]: https://github.com/yighy/pantograph/compare/v0.16.0...v0.16.1
+[0.16.0]: https://github.com/yighy/pantograph/compare/v0.15.0...v0.16.0
+[0.15.0]: https://github.com/yighy/pantograph/compare/v0.14.0...v0.15.0
+[0.14.0]: https://github.com/yighy/pantograph/compare/v0.13.0...v0.14.0
+[0.13.0]: https://github.com/yighy/pantograph/compare/v0.12.1...v0.13.0
+[0.12.1]: https://github.com/yighy/pantograph/compare/v0.12.0...v0.12.1
+[0.12.0]: https://github.com/yighy/pantograph/compare/v0.11.0...v0.12.0
+[0.11.0]: https://github.com/yighy/pantograph/compare/v0.10.0...v0.11.0
+[0.10.0]: https://github.com/yighy/pantograph/compare/v0.9.1...v0.10.0
+[0.9.1]: https://github.com/yighy/pantograph/releases/tag/v0.9.1

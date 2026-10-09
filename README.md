@@ -2,8 +2,8 @@
 <h1 align="center">Pantograph</h1>
 <p align="center">A cursor-based drawing app for Android</p>
 <p align="center">
-  <a href="https://github.com/yighy/Pantograph/releases">
-    <img src="https://img.shields.io/github/v/release/yighy/Pantograph?style=for-the-badge&logo=GitHub" alt="GitHub release" />
+  <a href="https://github.com/yighy/pantograph/releases">
+    <img src="https://img.shields.io/github/v/release/yighy/pantograph?style=for-the-badge&logo=GitHub" alt="GitHub release" />
   </a>
 </p>
 
@@ -23,7 +23,7 @@ Named after the 1821 drafting instrument that reproduced a drawing elsewhere as 
 
 ## Install
 
-Download the APK from [Releases](https://github.com/yighy/Pantograph/releases). Requires Android 12 or newer.
+Download the APK from [Releases](https://github.com/yighy/pantograph/releases). Requires Android 12 or newer.
 What changed in each version is in the [changelog](CHANGELOG.md).
 
 To hear about new releases, turn on **Check for updates** in Settings: the app then looks on
@@ -84,7 +84,7 @@ away from the canvas.
 Requirements: Android Studio (or a JDK 17+), Android SDK 37, min SDK 31.
 
 ```bash
-git clone https://github.com/yighy/Pantograph.git
+git clone https://github.com/yighy/pantograph.git
 cd Pantograph
 ./gradlew assembleDebug
 ```

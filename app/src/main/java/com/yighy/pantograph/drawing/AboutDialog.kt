@@ -16,7 +16,7 @@ import androidx.compose.ui.unit.dp
 import com.yighy.pantograph.R
 import androidx.compose.ui.res.stringResource
 
-private const val GITHUB_URL = "https://github.com/yighy/Pantograph"
+private const val GITHUB_URL = "https://github.com/yighy/pantograph"
 
 @Composable
 fun AboutDialog(onDismiss: () -> Unit) {

@@ -59,7 +59,7 @@ class ReleaseVersionTest {
     @Test
     fun `the page is built from the tag, on this repository`() {
         assertEquals(
-            "https://github.com/yighy/Pantograph/releases/tag/v0.19.0",
+            "https://github.com/yighy/pantograph/releases/tag/v0.19.0",
             ReleaseVersion.pageUrl("v0.19.0")
         )
     }

@@ -46,7 +46,7 @@ object ReleaseVersion {
      */
     fun pageUrl(tag: String): String = "$REPOSITORY_URL/releases/tag/$tag"
 
-    const val REPOSITORY_URL = "https://github.com/yighy/Pantograph"
+    const val REPOSITORY_URL = "https://github.com/yighy/pantograph"
 }
 
 /**
@@ -132,7 +132,7 @@ class UpdateChecker(
 
     private companion object {
         // "latest" leaves out drafts and pre-releases.
-        const val LATEST_RELEASE_API = "https://api.github.com/repos/yighy/Pantograph/releases/latest"
+        const val LATEST_RELEASE_API = "https://api.github.com/repos/yighy/pantograph/releases/latest"
         const val CHECK_INTERVAL_MS = 24L * 60 * 60 * 1000
         const val TIMEOUT_MS = 10_000
     }
