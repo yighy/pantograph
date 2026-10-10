@@ -1,5 +1,6 @@
 package com.yighy.pantograph
 
+import android.text.format.DateUtils
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.MutableTransitionState
 import androidx.compose.animation.core.animateDpAsState
@@ -31,6 +32,7 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.LocalUriHandler
 import coil3.compose.AsyncImage
@@ -39,11 +41,10 @@ import coil3.request.addLastModifiedToFileCacheKey
 import com.yighy.pantograph.data.PreferenceManager
 import com.yighy.pantograph.data.ProjectEntity
 import com.yighy.pantograph.data.ReleaseVersion
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import androidx.compose.ui.res.stringResource
 import com.yighy.pantograph.ui.theme.MotionTokens
-import java.text.SimpleDateFormat
-import java.util.*
 
 /**
  * A newer release than the one installed, with a link to its page. Shown until that version is
@@ -282,8 +283,15 @@ fun ProjectCard(
     onDelete: () -> Unit,
     onRename: () -> Unit
 ) {
-    val dateFormatter = remember { SimpleDateFormat("dd MMM yyyy", Locale.getDefault()) }
-    val lastModified = remember(project.updatedAt) { dateFormatter.format(Date(project.updatedAt)) }
+    // Read against a clock that moves on by the minute, so "5 min ago" does not sit there
+    // unchanged for as long as the list stays open.
+    val now by produceState(System.currentTimeMillis()) {
+        while (true) {
+            delay(60_000)
+            value = System.currentTimeMillis()
+        }
+    }
+    val lastModified = remember(project.updatedAt, now) { relativeTime(project.updatedAt, now) }
     var showMenu by remember { mutableStateOf(false) }
 
     // Shape and scale answer the finger, which is the expressive part: the card softens and
@@ -356,11 +364,22 @@ fun ProjectCard(
                         style = MaterialTheme.typography.titleMedium,
                         maxLines = 1
                     )
+                    // A line each: side by side they ran past the width of a card in the
+                    // two-column grid, and the one line allowed was cut wherever it wrapped -
+                    // which left the date as a lone number.
                     Text(
-                        text = "${project.width} × ${project.height}  ·  $lastModified",
+                        text = lastModified.toString(),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Text(
+                        text = "${project.width} × ${project.height}",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
                 
@@ -496,3 +515,17 @@ fun CreateProjectDialog(
         }
     )
 }
+
+/**
+ * When a project was last changed, the way people say it: "5 min ago", "Yesterday", and a date
+ * once it is more than a week back - in the phone's own language. A date alone could not tell
+ * apart two drawings worked on the same day, which is most of the time.
+ */
+private fun relativeTime(time: Long, now: Long): CharSequence =
+    // Under a minute reads as "now" rather than "0 min ago".
+    DateUtils.getRelativeTimeSpanString(
+        time,
+        if (now - time < DateUtils.MINUTE_IN_MILLIS) time else now,
+        DateUtils.MINUTE_IN_MILLIS,
+        DateUtils.FORMAT_ABBREV_RELATIVE or DateUtils.FORMAT_ABBREV_MONTH
+    )
