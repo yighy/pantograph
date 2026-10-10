@@ -74,7 +74,7 @@ What changed in each version is in the [changelog](CHANGELOG.md).
 > starts from an empty database rather than migrating the old one. Releases that do this say so
 > at the top of their notes, and the changelog marks them — export anything you want to keep first.
 
-## Building
+## Build
 
 Requirements: Android Studio (or a JDK 17+), Android SDK 37, min SDK 31.
 
