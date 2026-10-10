@@ -140,7 +140,7 @@ fun SettingsScreen(
             SectionHeader("Button")
             SliderRow(
                 label = "Size",
-                valueLabel = null,
+                valueLabel = "${fabSize.toInt()} dp",
                 value = fabSize,
                 range = 40f..120f,
                 onChange = { scope.launch { preferenceManager.setFabSize(it) } }
