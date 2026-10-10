@@ -95,110 +95,116 @@ fun LayersAndActionsSection(
         // would hold its gap open for a chip row that is not there. Each child below carries
         // its own top padding instead, which costs nothing while it is hidden.
     ) {
-        if (!isFullscreen) ButtonGroup {
-            // Extra-tools gate (moved from the bottom toolbar to free up its space) with
-            // Fit-to-Screen folded in as a menu item, taking the slot the standalone
-            // Fullscreen button used to occupy
-            ToolsMenuButton(
-                viewModel = viewModel,
-                drawingMode = drawingMode,
-                isLazyModeActive = isLazyModeActive,
-                isFullscreen = isFullscreen
-            )
+        AnimatedVisibility(
+            visible = !isFullscreen,
+            enter = fullscreenChromeEnter(Alignment.Top),
+            exit = fullscreenChromeExit(Alignment.Top)
+        ) {
+            ButtonGroup {
+                // Extra-tools gate (moved from the bottom toolbar to free up its space) with
+                // Fit-to-Screen folded in as a menu item, taking the slot the standalone
+                // Fullscreen button used to occupy
+                ToolsMenuButton(
+                    viewModel = viewModel,
+                    drawingMode = drawingMode,
+                    isLazyModeActive = isLazyModeActive,
+                    isFullscreen = isFullscreen
+                )
 
-            GroupedButton(
-                GroupPosition.Middle,
-                onClick = onToggleLayers,
-                pressed = showLayersPanel,
-                isToggle = true
-            ) {
-                Icon(Icons.Rounded.Layers, contentDescription = "Layers")
-            }
-
-            Box {
-                GroupedButton(GroupPosition.Last, onClick = { showMenu = true }, pressed = showMenu) {
-                    Icon(Icons.Default.MoreVert, contentDescription = "More")
-                }
-                DropdownMenu(
-                    expanded = showMenu,
-                    onDismissRequest = { showMenu = false },
-                    // Clear of the button: the buttons lost the padded container they used to
-                    // sit in, and the menu would otherwise touch their bottom edge.
-                    offset = DpOffset(0.dp, 8.dp),
-                    shape = MaterialTheme.shapes.large,
-                    containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+                GroupedButton(
+                    GroupPosition.Middle,
+                    onClick = onToggleLayers,
+                    pressed = showLayersPanel,
+                    isToggle = true
                 ) {
-                    // Leading icons stay untinted, so they take the menu's own
-                    // onSurfaceVariant. Colour here is reserved for saying "this one is
-                    // destructive" (error) - accenting an ordinary action just makes the
-                    // items next to it look disabled, and the accents this menu had
-                    // marked no such thing: "Import Image" only opens the two entries
-                    // below it, which were the grey ones.
-                    DropdownMenuItem(
-                        text = { Text("Save Project") },
-                        onClick = { viewModel.manualSave(); showMenu = false },
-                        leadingIcon = { Icon(Icons.Rounded.Save, null) }
-                    )
-                    DropdownMenuItem(
-                        text = { Text("Import Image") },
-                        onClick = { showImportOptions = !showImportOptions },
-                        leadingIcon = { Icon(Icons.Rounded.AddPhotoAlternate, null) },
-                        trailingIcon = {
-                            // One chevron that turns over, rather than two that swap: the
-                            // rotation is continuous with the rows unfolding underneath,
-                            // where a swap would pop at whichever frame it happened on.
-                            val chevron by animateFloatAsState(
-                                targetValue = if (showImportOptions) 180f else 0f,
-                                animationSpec = MotionTokens.expressiveEnter,
-                                label = "importChevron"
-                            )
-                            Icon(Icons.Rounded.ExpandMore, null, modifier = Modifier.rotate(chevron))
-                        }
-                    )
-                    // The two entries fold out of the row above instead of appearing
-                    // whole, so it reads as one row opening rather than the menu
-                    // reshuffling under the finger.
-                    AnimatedVisibility(
-                        visible = showImportOptions,
-                        enter = fadeIn(MotionTokens.expressiveEnter) + expandVertically(MotionTokens.panelTransition),
-                        exit = fadeOut(MotionTokens.expressiveExit) + shrinkVertically(MotionTokens.panelTransition)
-                    ) {
-                        Column {
-                            DropdownMenuItem(
-                                text = { Text("Reference") },
-                                onClick = { imagePickerLauncher.launch(arrayOf("image/*")); showMenu = false },
-                                leadingIcon = { Icon(Icons.Rounded.Image, null) },
-                                modifier = Modifier.padding(start = 16.dp)
-                            )
-                            DropdownMenuItem(
-                                text = { Text("As New Layer") },
-                                onClick = { layerImportLauncher.launch("image/*"); showMenu = false },
-                                leadingIcon = { Icon(Icons.Rounded.Layers, null) },
-                                modifier = Modifier.padding(start = 16.dp)
-                            )
-                        }
+                    Icon(Icons.Rounded.Layers, contentDescription = "Layers")
+                }
+
+                Box {
+                    GroupedButton(GroupPosition.Last, onClick = { showMenu = true }, pressed = showMenu) {
+                        Icon(Icons.Default.MoreVert, contentDescription = "More")
                     }
-                    DropdownMenuItem(
-                        text = { Text("Export as PNG") },
-                        onClick = { viewModel.exportProject(context, "png"); showMenu = false },
-                        leadingIcon = { Icon(Icons.Rounded.IosShare, null) }
-                    )
-                    if (timelapseEnabled) DropdownMenuItem(
-                        text = { Text("Timelapse") },
-                        onClick = { showTimelapseDialog = true; showMenu = false },
-                        leadingIcon = { Icon(Icons.Rounded.Timelapse, null) }
-                    )
-                    HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
-                    DropdownMenuItem(
-                        text = { Text("Settings") },
-                        onClick = { onNavigateToSettings(); showMenu = false },
-                        leadingIcon = { Icon(Icons.Rounded.Settings, null) }
-                    )
-                    DropdownMenuItem(
-                        text = { Text("About") },
-                        onClick = { showAboutDialog = true; showMenu = false },
-                        leadingIcon = { Icon(Icons.Rounded.Info, null) }
-                    )
+                    DropdownMenu(
+                        expanded = showMenu,
+                        onDismissRequest = { showMenu = false },
+                        // Clear of the button: the buttons lost the padded container they used to
+                        // sit in, and the menu would otherwise touch their bottom edge.
+                        offset = DpOffset(0.dp, 8.dp),
+                        shape = MaterialTheme.shapes.large,
+                        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+                    ) {
+                        // Leading icons stay untinted, so they take the menu's own
+                        // onSurfaceVariant. Colour here is reserved for saying "this one is
+                        // destructive" (error) - accenting an ordinary action just makes the
+                        // items next to it look disabled, and the accents this menu had
+                        // marked no such thing: "Import Image" only opens the two entries
+                        // below it, which were the grey ones.
+                        DropdownMenuItem(
+                            text = { Text("Save Project") },
+                            onClick = { viewModel.manualSave(); showMenu = false },
+                            leadingIcon = { Icon(Icons.Rounded.Save, null) }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Import Image") },
+                            onClick = { showImportOptions = !showImportOptions },
+                            leadingIcon = { Icon(Icons.Rounded.AddPhotoAlternate, null) },
+                            trailingIcon = {
+                                // One chevron that turns over, rather than two that swap: the
+                                // rotation is continuous with the rows unfolding underneath,
+                                // where a swap would pop at whichever frame it happened on.
+                                val chevron by animateFloatAsState(
+                                    targetValue = if (showImportOptions) 180f else 0f,
+                                    animationSpec = MotionTokens.expressiveEnter,
+                                    label = "importChevron"
+                                )
+                                Icon(Icons.Rounded.ExpandMore, null, modifier = Modifier.rotate(chevron))
+                            }
+                        )
+                        // The two entries fold out of the row above instead of appearing
+                        // whole, so it reads as one row opening rather than the menu
+                        // reshuffling under the finger.
+                        AnimatedVisibility(
+                            visible = showImportOptions,
+                            enter = fadeIn(MotionTokens.expressiveEnter) + expandVertically(MotionTokens.panelTransition),
+                            exit = fadeOut(MotionTokens.expressiveExit) + shrinkVertically(MotionTokens.panelTransition)
+                        ) {
+                            Column {
+                                DropdownMenuItem(
+                                    text = { Text("Reference") },
+                                    onClick = { imagePickerLauncher.launch(arrayOf("image/*")); showMenu = false },
+                                    leadingIcon = { Icon(Icons.Rounded.Image, null) },
+                                    modifier = Modifier.padding(start = 16.dp)
+                                )
+                                DropdownMenuItem(
+                                    text = { Text("As New Layer") },
+                                    onClick = { layerImportLauncher.launch("image/*"); showMenu = false },
+                                    leadingIcon = { Icon(Icons.Rounded.Layers, null) },
+                                    modifier = Modifier.padding(start = 16.dp)
+                                )
+                            }
+                        }
+                        DropdownMenuItem(
+                            text = { Text("Export as PNG") },
+                            onClick = { viewModel.exportProject(context, "png"); showMenu = false },
+                            leadingIcon = { Icon(Icons.Rounded.IosShare, null) }
+                        )
+                        if (timelapseEnabled) DropdownMenuItem(
+                            text = { Text("Timelapse") },
+                            onClick = { showTimelapseDialog = true; showMenu = false },
+                            leadingIcon = { Icon(Icons.Rounded.Timelapse, null) }
+                        )
+                        HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+                        DropdownMenuItem(
+                            text = { Text("Settings") },
+                            onClick = { onNavigateToSettings(); showMenu = false },
+                            leadingIcon = { Icon(Icons.Rounded.Settings, null) }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("About") },
+                            onClick = { showAboutDialog = true; showMenu = false },
+                            leadingIcon = { Icon(Icons.Rounded.Info, null) }
+                        )
+                    }
                 }
             }
         }

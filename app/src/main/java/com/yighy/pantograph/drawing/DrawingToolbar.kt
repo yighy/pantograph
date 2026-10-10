@@ -174,50 +174,56 @@ fun DrawingToolbar(
         // The bar itself: history under one thumb, the three panels under the other. Two
         // groups in the corners rather than one row in the middle, so the middle of the bottom
         // edge - where you would otherwise be drawing - stays clear.
-        if (!armedToolsOnly) Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+        AnimatedVisibility(
+            visible = !armedToolsOnly,
+            enter = fullscreenChromeEnter(Alignment.Bottom),
+            exit = fullscreenChromeExit(Alignment.Bottom)
         ) {
-            ButtonGroup {
-                GroupedButton(GroupPosition.First, onClick = { viewModel.undo() }, enabled = canUndo && !isPenDown) {
-                    Icon(Icons.AutoMirrored.Rounded.Undo, "Undo")
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                ButtonGroup {
+                    GroupedButton(GroupPosition.First, onClick = { viewModel.undo() }, enabled = canUndo && !isPenDown) {
+                        Icon(Icons.AutoMirrored.Rounded.Undo, "Undo")
+                    }
+                    GroupedButton(GroupPosition.Last, onClick = { viewModel.redo() }, enabled = canRedo && !isPenDown) {
+                        Icon(Icons.AutoMirrored.Rounded.Redo, "Redo")
+                    }
                 }
-                GroupedButton(GroupPosition.Last, onClick = { viewModel.redo() }, enabled = canRedo && !isPenDown) {
-                    Icon(Icons.AutoMirrored.Rounded.Redo, "Redo")
-                }
-            }
 
-            // At most one of these is pressed, and it stays pressed for as long as its card is
-            // up. Colour at the far end, the one reached for most while drawing.
-            ButtonGroup {
-                GroupedButton(
-                    GroupPosition.First,
-                    onClick = { toggle(ToolbarPanel.Settings) },
-                    pressed = activePanel == ToolbarPanel.Settings,
-                    isToggle = true
-                ) {
-                    Icon(Icons.Rounded.Tune, "Tool settings")
-                }
-                GroupedButton(
-                    GroupPosition.Middle,
-                    onClick = { toggle(ToolbarPanel.Brush) },
-                    pressed = activePanel == ToolbarPanel.Brush,
-                    isToggle = true
-                ) {
-                    Icon(Icons.Rounded.Brush, "Brush presets")
-                }
-                // The whole button is the colour in hand, so it shows at a glance from across the
-                // screen, and the palette glyph on it still says what the button does. Opaque:
-                // the colour's alpha is a brush setting, not part of what it looks like here.
-                GroupedButton(
-                    GroupPosition.Last,
-                    onClick = { toggle(ToolbarPanel.Color) },
-                    pressed = activePanel == ToolbarPanel.Color,
-                    isToggle = true,
-                    fill = selectedColor.copy(alpha = 1f)
-                ) {
-                    Icon(Icons.Rounded.Palette, "Colour picker")
+                // At most one of these is pressed, and it stays pressed for as long as its card is
+                // up. Colour at the far end, the one reached for most while drawing.
+                ButtonGroup {
+                    GroupedButton(
+                        GroupPosition.First,
+                        onClick = { toggle(ToolbarPanel.Settings) },
+                        pressed = activePanel == ToolbarPanel.Settings,
+                        isToggle = true
+                    ) {
+                        Icon(Icons.Rounded.Tune, "Tool settings")
+                    }
+                    GroupedButton(
+                        GroupPosition.Middle,
+                        onClick = { toggle(ToolbarPanel.Brush) },
+                        pressed = activePanel == ToolbarPanel.Brush,
+                        isToggle = true
+                    ) {
+                        Icon(Icons.Rounded.Brush, "Brush presets")
+                    }
+                    // The whole button is the colour in hand, so it shows at a glance from across the
+                    // screen, and the palette glyph on it still says what the button does. Opaque:
+                    // the colour's alpha is a brush setting, not part of what it looks like here.
+                    GroupedButton(
+                        GroupPosition.Last,
+                        onClick = { toggle(ToolbarPanel.Color) },
+                        pressed = activePanel == ToolbarPanel.Color,
+                        isToggle = true,
+                        fill = selectedColor.copy(alpha = 1f)
+                    ) {
+                        Icon(Icons.Rounded.Palette, "Colour picker")
+                    }
                 }
             }
         }

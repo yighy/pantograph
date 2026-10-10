@@ -44,6 +44,23 @@ import kotlinx.coroutines.flow.map
 private val topSafeInsets: WindowInsets
     @Composable get() = WindowInsets.statusBars.union(WindowInsets.displayCutout)
 
+/**
+ * The buttons fullscreen takes away, leaving: each slides off towards the edge it sits against
+ * while fading, and the space it held closes behind it, so whatever sat beside it - the chips
+ * under the top group, the card above the bottom one - follows rather than jumping once it has
+ * gone. [edge] is that edge, top or bottom.
+ */
+internal fun fullscreenChromeExit(edge: Alignment.Vertical): ExitTransition =
+    slideOutVertically(MotionTokens.slideExit) { if (edge == Alignment.Top) -it else it } +
+        shrinkVertically(MotionTokens.panelTransition, shrinkTowards = edge) +
+        fadeOut(MotionTokens.expressiveExit)
+
+/** [fullscreenChromeExit] backwards, as fullscreen ends. */
+internal fun fullscreenChromeEnter(edge: Alignment.Vertical): EnterTransition =
+    slideInVertically(MotionTokens.slideEnter) { if (edge == Alignment.Top) -it else it } +
+        expandVertically(MotionTokens.panelTransition, expandFrom = edge) +
+        fadeIn(MotionTokens.expressiveEnter)
+
 @Composable
 fun DrawingScreen(
     viewModel: DrawingViewModel,
@@ -162,15 +179,18 @@ fun DrawingScreen(
             )
             
             // Back: a group of one, so it is round all the way, like the ends of the others.
-            if (!isFullscreen) GroupedButton(
-                GroupPosition.Only,
-                onClick = onBack,
+            AnimatedVisibility(
+                visible = !isFullscreen,
+                enter = fullscreenChromeEnter(Alignment.Top),
+                exit = fullscreenChromeExit(Alignment.Top),
                 modifier = Modifier
                     .windowInsetsPadding(topSafeInsets)
                     .padding(16.dp)
                     .align(Alignment.TopStart)
             ) {
-                Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back")
+                GroupedButton(GroupPosition.Only, onClick = onBack) {
+                    Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back")
+                }
             }
 
             // Top Right Actions & Layers Panel
