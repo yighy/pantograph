@@ -39,6 +39,7 @@ internal fun DrawButton(
     drawingMode: DrawingMode,
     isEyeDropperMode: Boolean,
     isPenEngaged: Boolean,
+    anchorApplies: Boolean,
     onPositionChanged: (Float, Float) -> Unit
 ) {
     val haptics = LocalHapticFeedback.current
@@ -207,16 +208,23 @@ internal fun DrawButton(
             armed != null -> armed.third
             else -> MaterialTheme.colorScheme.tertiaryContainer
         }
-        // Engaged rather than down, so an armed anchor keeps the pen glyph between lines
-        // instead of flicking back to the hand each time the drawing finger lifts.
-        val fabIcon = armed?.first
-            ?: if (isPenEngaged) Icons.Default.Edit else Icons.Default.TouchApp
+        // With Anchor on, the anchor takes the place of both the hand and the pen: a press
+        // behaves differently, and the button is where the eye is when it does. Held, it stays,
+        // as an armed tool's glyph does - the colour already says the button is down. Its
+        // colours are drawing's own, since what comes out is still a stroke. Otherwise engaged
+        // rather than down, so the pen glyph does not flick back to the hand mid-stroke.
+        val fabIcon = armed?.first ?: when {
+            anchorApplies -> Icons.Rounded.Anchor
+            isPenEngaged -> Icons.Default.Edit
+            else -> Icons.Default.TouchApp
+        }
         // The path tool is held to place rather than held to draw, so it says so: "Drawing"
         // would be describing a stroke that is not happening.
         val fabDescription = when {
             drawingMode is DrawingMode.Path ->
                 if (isPenEngaged) "Placing a path point" else "Hold to place a path point"
             armed != null -> armed.second
+            anchorApplies -> if (isPenEngaged) "Drawing from the anchor" else "Hold to draw from an anchor"
             isPenEngaged -> "Drawing"
             else -> "Hold to draw"
         }

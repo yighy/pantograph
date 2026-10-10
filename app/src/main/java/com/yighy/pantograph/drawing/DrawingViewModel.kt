@@ -1103,12 +1103,7 @@ class DrawingViewModel(
      * lines, which make the fan the tool is half for. A fill, a selection, a path or a gradient
      * each does its own thing with a press, and the anchor would only get in its way.
      */
-    private fun anchorApplies(state: DrawingState): Boolean =
-        state.isAnchorActive && !state.isEyeDropperMode && when (state.drawingMode) {
-            is DrawingMode.Freehand, is DrawingMode.Eraser,
-            is DrawingMode.StraightLine, is DrawingMode.StraightLineEraser -> true
-            else -> false
-        }
+    private fun anchorApplies(state: DrawingState): Boolean = state.anchorApplies
 
     /** The floating button went down. */
     fun pressPen() {

@@ -31,6 +31,7 @@ fun HoverDrawButton(
     // Held, whether or not that means painting - see DrawingState.isPenEngaged.
     val isPenEngaged by remember(viewModel) { viewModel.uiState.map { it.isPenEngaged }.distinctUntilChanged() }.collectAsState(false)
     val drawingMode by remember(viewModel) { viewModel.uiState.map { it.drawingMode }.distinctUntilChanged() }.collectAsState(DrawingMode.Freehand)
+    val anchorApplies by remember(viewModel) { viewModel.uiState.map { it.anchorApplies }.distinctUntilChanged() }.collectAsState(false)
     val gateColor by remember(viewModel) { viewModel.uiState.map { it.selectedColor }.distinctUntilChanged() }.collectAsState(Color.Black)
     val pinnedTools by remember(viewModel) { viewModel.uiState.map { it.pinnedTools }.distinctUntilChanged() }.collectAsState(emptyList())
     // Derived in the flow rather than read off uiState.value in composition, so the pill
@@ -86,6 +87,7 @@ fun HoverDrawButton(
             drawingMode = drawingMode,
             isEyeDropperMode = isEyeDropperMode,
             isPenEngaged = isPenEngaged,
+            anchorApplies = anchorApplies,
             onPositionChanged = onPositionChanged
         )
 

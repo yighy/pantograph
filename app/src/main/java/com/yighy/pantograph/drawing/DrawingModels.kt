@@ -433,6 +433,17 @@ data class DrawingState(
     val isPenEngaged: Boolean get() = isPenDown || grabbedPathPoint >= 0 || isAnchorArmed
 
     /**
+     * A press of the button would start an anchored hold: Anchor is on and the tool in hand
+     * draws lines. With the fill or a selection tool armed, Anchor waits switched on but has no
+     * say in what the button does.
+     */
+    val anchorApplies: Boolean get() = isAnchorActive && !isEyeDropperMode && when (drawingMode) {
+        is DrawingMode.Freehand, is DrawingMode.Eraser,
+        is DrawingMode.StraightLine, is DrawingMode.StraightLineEraser -> true
+        else -> false
+    }
+
+    /**
      * Index of the path point the cursor is close enough to pick up, or -1.
      *
      * Derived rather than stored: it is a function of where the cursor is, and a copy kept in
