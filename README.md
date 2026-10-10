@@ -21,15 +21,6 @@ stays off the canvas and the reticle lays the stroke, so nothing hides the end o
 
 Named after the 1821 drafting instrument that reproduced a drawing elsewhere as you traced it.
 
-## Install
-
-Download the APK from [Releases](https://github.com/yighy/pantograph/releases). 
-What changed in each version is in the [changelog](CHANGELOG.md).
-
-> **Before 1.0, an update can clear your projects.** When the storage format changes, the app
-> starts from an empty database rather than migrating the old one. Releases that do this say so
-> at the top of their notes, and the changelog marks them — export anything you want to keep first.
-
 ## How it works
 
 - **Drag anywhere** on the canvas to move the cursor — the stroke happens at the reticle, not under your finger.
@@ -73,6 +64,15 @@ away from the canvas.
 - Fullscreen, leaving only the floating button, its satellites and the chips.
 - Export as PNG.
 - Timelapse (experimental, turn on Experimental features in Settings): record a drawing as you make it, and export it as an MP4 of 15 s, 30 s or its own pace.
+
+## Install
+
+Download the APK from [Releases](https://github.com/yighy/pantograph/releases). 
+What changed in each version is in the [changelog](CHANGELOG.md).
+
+> **Before 1.0, an update can clear your projects.** When the storage format changes, the app
+> starts from an empty database rather than migrating the old one. Releases that do this say so
+> at the top of their notes, and the changelog marks them — export anything you want to keep first.
 
 ## Building
 
