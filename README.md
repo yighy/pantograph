@@ -1,18 +1,12 @@
-<p align=center><image src="app/src/main/ic_launcher-playstore.png" height="200" /></p>
 <h1 align="center">Pantograph</h1>
-<p align="center">A cursor-based drawing app for Android</p>
+<p align=center><image src="app/src/main/ic_launcher-playstore.png" height="200" /></p>
+<p align="center">A cursor-based drawing app for Android.</p>
 <p align="center">
-  <a href="https://github.com/yighy/pantograph/releases">
-    <img src="https://img.shields.io/github/v/release/yighy/pantograph?style=for-the-badge&logo=GitHub" alt="GitHub release" />
-  </a>
 </p>
 
 <p align=center>
 <image src="assets/1.gif" height="512"/>
 </p>
-
-
----
 
 ## Overview
 
