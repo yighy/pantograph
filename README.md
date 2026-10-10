@@ -23,7 +23,7 @@ Named after the 1821 drafting instrument that reproduced a drawing elsewhere as 
 
 ## Install
 
-Download the APK from [Releases](https://github.com/yighy/pantograph/releases). Requires Android 12 or newer.
+Download the APK from [Releases](https://github.com/yighy/pantograph/releases). 
 What changed in each version is in the [changelog](CHANGELOG.md).
 
 > **Before 1.0, an update can clear your projects.** When the storage format changes, the app
@@ -34,7 +34,6 @@ What changed in each version is in the [changelog](CHANGELOG.md).
 
 - **Drag anywhere** on the canvas to move the cursor — the stroke happens at the reticle, not under your finger.
 - **Tap** the screen or **hold** the floating button to lower and raise the pen.
-- **Two fingers** to pan, zoom and rotate the canvas.
 - While the pen is down the cursor moves slower than your finger, for precision — how much is up to you.
 - Every tool you turn on shows as a **chip**: tap it to turn the tool off, drag it to adjust the tool's settings.
 
