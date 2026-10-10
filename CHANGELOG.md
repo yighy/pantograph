@@ -9,8 +9,21 @@ and versions follow [Semantic Versioning](https://semver.org/). Full notes for e
 
 ## [Unreleased]
 
+## [0.19.0] - 2026-10-10
+
+### Added
+- The buttons slide away when fullscreen starts and back when it ends, rather than vanishing.
+- With Anchor on, the floating button shows an anchor, held or not.
+
 ### Changed
+- Projects on the home screen say how long ago they were changed: "5 min ago", "Yesterday", or
+  the date once it is more than a week back.
 - The release APK is named `Pantograph-<version>-release.apk`.
+- The repository is now github.com/yighy/pantograph; the update check and the About links follow it.
+
+### Fixed
+- The home screen showed only the day of a project's date, the rest cut off.
+- The button size in Settings shows its value again.
 
 ## [0.18.0] - 2026-10-01
 
@@ -157,7 +170,8 @@ and versions follow [Semantic Versioning](https://semver.org/). Full notes for e
 
 Initial release.
 
-[Unreleased]: https://github.com/yighy/pantograph/compare/v0.18.0...HEAD
+[Unreleased]: https://github.com/yighy/pantograph/compare/v0.19.0...HEAD
+[0.19.0]: https://github.com/yighy/pantograph/compare/v0.18.0...v0.19.0
 [0.18.0]: https://github.com/yighy/pantograph/compare/v0.17.2...v0.18.0
 [0.17.2]: https://github.com/yighy/pantograph/compare/v0.17.1...v0.17.2
 [0.17.1]: https://github.com/yighy/pantograph/compare/v0.17.0...v0.17.1

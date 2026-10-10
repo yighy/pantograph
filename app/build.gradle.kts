@@ -26,8 +26,8 @@ android {
         applicationId = "com.yighy.pantograph"
         minSdk = 31
         targetSdk = 37
-        versionCode = 16
-        versionName = "0.18.0"
+        versionCode = 17
+        versionName = "0.19.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -67,7 +67,7 @@ android {
     }
 }
 
-// Names the APK for the app and its version - Pantograph-0.18.0-release.apk - so it can be
+// Names the APK for the app and its version - Pantograph-0.19.0-release.apk - so it can be
 // attached to a release as it comes out of the build, without renaming.
 base {
     archivesName.set("Pantograph-${android.defaultConfig.versionName}")
