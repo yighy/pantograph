@@ -276,7 +276,7 @@ fun CanvasLayer(viewModel: DrawingViewModel, crisp: Boolean = false) {
         val smooth = !crisp
         layers.filter { it.isVisible }.forEach { layer ->
             val isActiveLayer = layer.id == activeLayerId
-            val isEraser = drawingMode is DrawingMode.Eraser || drawingMode is DrawingMode.StraightLineEraser
+            val isEraser = drawingMode.isEraser
             
             if (isActiveLayer && isPenDown && isEraser) {
                 // Eraser mode: Blend the stroke with DST_OUT on this layer

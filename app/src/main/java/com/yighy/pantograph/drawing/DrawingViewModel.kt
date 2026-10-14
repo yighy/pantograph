@@ -34,6 +34,9 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
 
+/** Canvas pixels the brush travels before the lasso fill stores another point of its outline. */
+private const val LASSO_FILL_STEP = 1.5f
+
 /**
  * Coordinates one open project.
  *
@@ -387,6 +390,27 @@ class DrawingViewModel(
                     return
                 }
 
+                mode.isLassoFill -> {
+                    val points = state.currentPath?.points.orEmpty()
+                    // A point per pixel of travel at most: a slow hand would otherwise pile up
+                    // thousands of samples on top of each other, and every one is walked again
+                    // each time the shape is repainted.
+                    val grown = if (points.isEmpty() || (newBrushPosition - points.last()).getDistance() >= LASSO_FILL_STEP) {
+                        points + newBrushPosition
+                    } else points
+                    // The whole shape again, with the closing edge to where the cursor is now,
+                    // so what shows is exactly what lands at release.
+                    engine.drawLassoFill(grown + newBrushPosition, state)
+                    session.update { it.copy(
+                        cursorPosition = newPosition,
+                        brushPosition = newBrushPosition,
+                        currentPath = it.currentPath?.copy(points = grown),
+                        renderVersion = it.renderVersion + 1
+                    ) }
+                    engine.addDistance(travelled)
+                    return
+                }
+
                 mode is DrawingMode.Freehand || mode is DrawingMode.Eraser -> {
                     engine.extendSmoothed(newBrushPosition, state)
                     needsRedraw = true
@@ -489,7 +513,8 @@ class DrawingViewModel(
             // re-runs under contention, and a re-run would stamp twice.
             if (state.drawingMode !is DrawingMode.BucketFill &&
                 state.drawingMode !is DrawingMode.StraightLine &&
-                state.drawingMode !is DrawingMode.Gradient
+                state.drawingMode !is DrawingMode.Gradient &&
+                !state.drawingMode.isLassoFill
             ) {
                 engine.drawSegment(state.brushPosition, state.brushPosition, state)
             }
@@ -516,6 +541,12 @@ class DrawingViewModel(
             // End of stroke - Commit the stroke to the active layer
             if (state.drawingMode is DrawingMode.StraightLine || state.drawingMode is DrawingMode.StraightLineEraser) {
                 commitCurrentPath()
+            }
+            // Closed on where the brush let go, which the last stored point can trail by up to
+            // a step.
+            if (state.drawingMode.isLassoFill) {
+                engine.drawLassoFill(state.currentPath?.points.orEmpty() + state.brushPosition, state)
+                session.bumpRender()
             }
 
             // Exactly one history entry per completed stroke, pushed before the layer is
@@ -569,7 +600,7 @@ class DrawingViewModel(
      * leaving nothing to crop to and a full-canvas copy per undo to hold.
      */
     private fun captureStrokeTrace(state: DrawingState): StrokeTrace? {
-        if (state.drawingMode is DrawingMode.Eraser || state.drawingMode is DrawingMode.StraightLineEraser) return null
+        if (state.drawingMode.isEraser) return null
         val stroke = engine.strokeBitmap ?: return null
         val r = engine.dirtyRegion(stroke.width, stroke.height) ?: return null
         if (r.width() <= 0 || r.height() <= 0) return null
@@ -599,7 +630,7 @@ class DrawingViewModel(
         val paint = Paint().apply {
             isAntiAlias = true
             alpha = (state.brushOpacity * 255).toInt()
-            if (state.drawingMode is DrawingMode.Eraser || state.drawingMode is DrawingMode.StraightLineEraser) {
+            if (state.drawingMode.isEraser) {
                 xfermode = PorterDuffXfermode(PorterDuff.Mode.DST_OUT)
             }
         }
@@ -871,13 +902,7 @@ class DrawingViewModel(
     fun toggleEraser() {
         selection.finalizeActive()
         session.update {
-            val newMode = when (it.drawingMode) {
-                is DrawingMode.Eraser -> DrawingMode.Freehand
-                is DrawingMode.StraightLineEraser -> DrawingMode.StraightLine
-                is DrawingMode.StraightLine -> DrawingMode.StraightLineEraser
-                else -> DrawingMode.Eraser
-            }
-            it.copy(drawingMode = newMode, isEyeDropperMode = false)
+            it.copy(drawingMode = it.drawingMode.withEraser(!it.drawingMode.isEraser), isEyeDropperMode = false)
         }
     }
 

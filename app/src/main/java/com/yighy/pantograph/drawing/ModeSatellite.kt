@@ -73,10 +73,10 @@ internal fun ModeSatellite(
             viewModel.setDrawingMode(if (isEraserMode) DrawingMode.StraightLineEraser else DrawingMode.StraightLine); true
         },
         CustomAccessibilityAction("Eraser off") {
-            viewModel.setDrawingMode(if (isLineMode) DrawingMode.StraightLine else DrawingMode.Freehand); true
+            viewModel.setDrawingMode(viewModel.uiState.value.drawingMode.withEraser(false)); true
         },
         CustomAccessibilityAction("Eraser on") {
-            viewModel.setDrawingMode(if (isLineMode) DrawingMode.StraightLineEraser else DrawingMode.Eraser); true
+            viewModel.setDrawingMode(viewModel.uiState.value.drawingMode.withEraser(true)); true
         },
         CustomAccessibilityAction("Undo") { viewModel.undo(); true },
         CustomAccessibilityAction("Swap to previous brush") { viewModel.swapToPreviousBrush(); true }
@@ -147,7 +147,7 @@ internal fun ModeSatellite(
                     haptics.performHapticFeedback(HapticFeedbackType.LongPress)
                     val cur = viewModel.uiState.value.drawingMode
                     val line = cur is DrawingMode.StraightLine || cur is DrawingMode.StraightLineEraser
-                    val eraser = cur is DrawingMode.Eraser || cur is DrawingMode.StraightLineEraser
+                    val eraser = cur.isEraser
                     // Each cell is one toggle or action rather than one value of a pair,
                     // which is what buys the two bottom cells: shape and eraser are
                     // independent of each other, so four half-cells were spending the
@@ -162,13 +162,7 @@ internal fun ModeSatellite(
                             }
                         )
                         // Eraser, carrying the shape across unchanged.
-                        1 -> viewModel.setDrawingMode(
-                            if (eraser) {
-                                if (line) DrawingMode.StraightLine else DrawingMode.Freehand
-                            } else {
-                                if (line) DrawingMode.StraightLineEraser else DrawingMode.Eraser
-                            }
-                        )
+                        1 -> viewModel.setDrawingMode(cur.withEraser(!eraser))
                         2 -> viewModel.undo()
                         else -> viewModel.swapToPreviousBrush()
                     }

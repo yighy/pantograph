@@ -3,6 +3,7 @@ package com.yighy.pantograph.drawing
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AutoFixHigh
 import androidx.compose.material.icons.rounded.FormatColorFill
+import androidx.compose.material.icons.rounded.FormatPaint
 import androidx.compose.material.icons.rounded.Gradient
 import androidx.compose.material.icons.rounded.HighlightAlt
 import androidx.compose.material.icons.rounded.Palette
@@ -31,6 +32,8 @@ enum class PinnableTool(
 ) {
     Fill("Fill", Icons.Rounded.FormatColorFill),
     Gradient("Gradient", Icons.Rounded.Gradient),
+    /** Traced to fill: a flat shape in one gesture, where the bucket needs an outline first. */
+    LassoFill("Lasso fill", Icons.Rounded.FormatPaint),
     Lazy("Lazy", Icons.Rounded.Cable),
     /**
      * Every line of a hold starts from one point, which the finger on the button moves. The
@@ -85,6 +88,7 @@ enum class PinnableTool(
     fun isActive(state: DrawingState): Boolean = when (this) {
         Fill -> state.drawingMode is DrawingMode.BucketFill
         Gradient -> state.drawingMode is DrawingMode.Gradient
+        LassoFill -> state.drawingMode.isLassoFill
         Lazy -> state.isLazyModeActive
         Anchor -> state.isAnchorActive
         Fine -> state.isFineCursor
@@ -115,6 +119,7 @@ enum class PinnableTool(
             Loupe -> viewModel.toggleLoupe()
             Fullscreen -> viewModel.toggleFullscreen()
             Gradient -> viewModel.setDrawingMode(if (wasActive) DrawingMode.Freehand else DrawingMode.Gradient)
+            LassoFill -> viewModel.setDrawingMode(if (wasActive) DrawingMode.Freehand else DrawingMode.LassoFill)
             Lasso -> viewModel.setDrawingMode(if (wasActive) DrawingMode.Freehand else DrawingMode.SelectLasso)
             Rect -> viewModel.setDrawingMode(if (wasActive) DrawingMode.Freehand else DrawingMode.SelectRect)
             Wand -> viewModel.setDrawingMode(if (wasActive) DrawingMode.Freehand else DrawingMode.SelectWand)

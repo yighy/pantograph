@@ -11,6 +11,16 @@ sealed class DrawingMode {
     object StraightLineEraser : DrawingMode()
     object BucketFill : DrawingMode()
     object Gradient : DrawingMode()
+
+    /**
+     * Fills the shape the cursor traces, with the brush's colour and opacity. The outline
+     * closes itself back to where the hold began, and the fill is previewed live as it grows;
+     * nothing of the brush's tip is used, only its colour.
+     */
+    object LassoFill : DrawingMode()
+
+    /** [LassoFill] taking away instead: the traced shape is cleared from the layer. */
+    object LassoErase : DrawingMode()
     object SelectLasso : DrawingMode()
     object SelectRect : DrawingMode()
     object SelectWand : DrawingMode()
@@ -30,6 +40,27 @@ sealed class DrawingMode {
  * which is the common case; sharpening a point is the exception you ask for.
  */
 data class PathPoint(val position: Offset, val isCorner: Boolean = false)
+
+/** Either side of the lasso fill: a traced shape, filled or cleared. */
+val DrawingMode.isLassoFill: Boolean
+    get() = this is DrawingMode.LassoFill || this is DrawingMode.LassoErase
+
+/** True for the modes that take pixels away from the layer rather than add them. */
+val DrawingMode.isEraser: Boolean
+    get() = this is DrawingMode.Eraser || this is DrawingMode.StraightLineEraser || this is DrawingMode.LassoErase
+
+/**
+ * This mode with the eraser [on] or off, keeping its shape: a straight line stays a straight
+ * line and a lasso fill a lasso fill. Everything without an eraser of its own comes out as
+ * the freehand brush or eraser.
+ */
+fun DrawingMode.withEraser(on: Boolean): DrawingMode = when (this) {
+    is DrawingMode.StraightLine, is DrawingMode.StraightLineEraser ->
+        if (on) DrawingMode.StraightLineEraser else DrawingMode.StraightLine
+    is DrawingMode.LassoFill, is DrawingMode.LassoErase ->
+        if (on) DrawingMode.LassoErase else DrawingMode.LassoFill
+    else -> if (on) DrawingMode.Eraser else DrawingMode.Freehand
+}
 
 /** True for every tool whose pen gesture manipulates the selection instead of painting. */
 fun DrawingMode.isSelectionTool(): Boolean =

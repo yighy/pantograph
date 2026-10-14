@@ -189,6 +189,10 @@ internal fun DrawButton(
                 Triple(Icons.Rounded.FormatColorFill, "Bucket fill active", MaterialTheme.colorScheme.primaryContainer)
             drawingMode is DrawingMode.Gradient ->
                 Triple(Icons.Rounded.Gradient, "Gradient active", MaterialTheme.colorScheme.primaryContainer)
+            drawingMode is DrawingMode.LassoFill ->
+                Triple(Icons.Rounded.FormatPaint, "Lasso fill active", MaterialTheme.colorScheme.primaryContainer)
+            drawingMode is DrawingMode.LassoErase ->
+                Triple(EraserIcon, "Lasso erase active", MaterialTheme.colorScheme.primaryContainer)
             drawingMode is DrawingMode.SelectLasso ->
                 Triple(Icons.Rounded.Polyline, "Lasso select active", MaterialTheme.colorScheme.primaryContainer)
             drawingMode is DrawingMode.SelectRect ->

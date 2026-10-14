@@ -354,7 +354,7 @@ private fun ToolsMenuButton(
     val isLoupeActive by remember(viewModel) { viewModel.uiState.map { it.isLoupeActive }.distinctUntilChanged() }.collectAsState(false)
     val isBucketFill = drawingMode is DrawingMode.BucketFill
     val isSelectionMode = drawingMode.isSelectionTool()
-    val isActive = showTools || isBucketFill || isLazyModeActive || isAnchorActive || isFineCursor || isLoupeActive || isSelectionMode || drawingMode is DrawingMode.Gradient
+    val isActive = showTools || isBucketFill || isLazyModeActive || isAnchorActive || isFineCursor || isLoupeActive || isSelectionMode || drawingMode is DrawingMode.Gradient || drawingMode.isLassoFill
 
     Box {
         GroupedButton(GroupPosition.First, onClick = { showTools = true }, pressed = isActive) {
@@ -410,6 +410,14 @@ private fun ToolsMenuButton(
                         onTogglePin = { viewModel.togglePinnedTool(PinnableTool.Gradient) }
                     ) {
                         viewModel.setDrawingMode(if (drawingMode is DrawingMode.Gradient) DrawingMode.Freehand else DrawingMode.Gradient)
+                        showTools = false
+                    }
+                    ExtraToolItem(
+                        "Lasso fill", drawingMode.isLassoFill, Icons.Rounded.FormatPaint,
+                        isPinned = pinnedTools.contains(PinnableTool.LassoFill),
+                        onTogglePin = { viewModel.togglePinnedTool(PinnableTool.LassoFill) }
+                    ) {
+                        viewModel.setDrawingMode(if (drawingMode.isLassoFill) DrawingMode.Freehand else DrawingMode.LassoFill)
                         showTools = false
                     }
                     ExtraToolItem(

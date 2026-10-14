@@ -6,6 +6,7 @@ import android.graphics.BlurMaskFilter
 import android.graphics.Canvas
 import android.graphics.LinearGradient
 import android.graphics.Paint
+import android.graphics.Path
 import android.graphics.PorterDuff
 import android.graphics.PorterDuffColorFilter
 import android.graphics.PorterDuffXfermode
@@ -299,6 +300,35 @@ class StrokeEngine {
             )
         }
         canvas.drawRect(0f, 0f, state.canvasWidth.toFloat(), state.canvasHeight.toFloat(), paint)
+    }
+
+    /**
+     * Repaints the buffer with the shape [points] trace, filled with [state]'s colour and closed
+     * back to its first point. Even-odd, so a loop traced back across itself leaves a hole
+     * where it doubles over, as the lasso selection reads the same outline. Opacity and the
+     * selection clip are applied at commit like any other stroke; the dirty region is the
+     * shape's bounds, so undo only stores the part of the layer it covered.
+     */
+    fun drawLassoFill(points: List<Offset>, state: DrawingState) {
+        clearTarget()
+        if (points.size < 3) return
+        val canvas = strokeCanvas ?: return
+        val path = Path().apply {
+            fillType = Path.FillType.EVEN_ODD
+            moveTo(points[0].x, points[0].y)
+            for (i in 1 until points.size) lineTo(points[i].x, points[i].y)
+            close()
+        }
+        val paint = Paint().apply {
+            isAntiAlias = state.antiAlias
+            style = Paint.Style.FILL
+            // Erasing goes by coverage alone, so it takes the whole of what it covers whatever
+            // the colour's own alpha; opacity still applies at commit.
+            color = if (state.drawingMode.isEraser) android.graphics.Color.BLACK else state.selectedColor.toArgb()
+        }
+        canvas.drawPath(path, paint)
+        path.computeBounds(strokeDirtyRect, true)
+        strokeDirtyValid = true
     }
 
     private fun drawBezier(p0: Offset, p1: Offset, p2: Offset, state: DrawingState) {
