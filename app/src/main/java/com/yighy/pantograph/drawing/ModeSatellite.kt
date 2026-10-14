@@ -67,10 +67,10 @@ internal fun ModeSatellite(
     // actually happens rather than depending on the state at the moment of the tap.
     val modeGateActions = listOf(
         CustomAccessibilityAction("Freehand") {
-            viewModel.setDrawingMode(if (isEraserMode) DrawingMode.Eraser else DrawingMode.Freehand); true
+            viewModel.setDrawingMode(viewModel.uiState.value.drawingMode.withLine(false)); true
         },
         CustomAccessibilityAction("Straight line") {
-            viewModel.setDrawingMode(if (isEraserMode) DrawingMode.StraightLineEraser else DrawingMode.StraightLine); true
+            viewModel.setDrawingMode(viewModel.uiState.value.drawingMode.withLine(true)); true
         },
         CustomAccessibilityAction("Eraser off") {
             viewModel.setDrawingMode(viewModel.uiState.value.drawingMode.withEraser(false)); true
@@ -146,7 +146,7 @@ internal fun ModeSatellite(
                     // Unlike the brush gate, this one only lands on release - confirm it.
                     haptics.performHapticFeedback(HapticFeedbackType.LongPress)
                     val cur = viewModel.uiState.value.drawingMode
-                    val line = cur is DrawingMode.StraightLine || cur is DrawingMode.StraightLineEraser
+                    val line = cur.isLine
                     val eraser = cur.isEraser
                     // Each cell is one toggle or action rather than one value of a pair,
                     // which is what buys the two bottom cells: shape and eraser are
@@ -154,13 +154,7 @@ internal fun ModeSatellite(
                     // quadrant on two booleans.
                     when (cell) {
                         // Shape, carrying the eraser state across unchanged.
-                        0 -> viewModel.setDrawingMode(
-                            if (line) {
-                                if (eraser) DrawingMode.Eraser else DrawingMode.Freehand
-                            } else {
-                                if (eraser) DrawingMode.StraightLineEraser else DrawingMode.StraightLine
-                            }
-                        )
+                        0 -> viewModel.setDrawingMode(cur.withLine(!line))
                         // Eraser, carrying the shape across unchanged.
                         1 -> viewModel.setDrawingMode(cur.withEraser(!eraser))
                         2 -> viewModel.undo()

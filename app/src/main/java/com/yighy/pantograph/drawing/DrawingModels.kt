@@ -21,6 +21,16 @@ sealed class DrawingMode {
 
     /** [LassoFill] taking away instead: the traced shape is cleared from the layer. */
     object LassoErase : DrawingMode()
+
+    /**
+     * [LassoFill] with straight sides. The hold is one shape: each drag of the drawing finger
+     * pulls a side out from the last corner, and lifting the finger fixes it as the next one.
+     * Letting go of the button closes the shape back to where it began.
+     */
+    object PolygonFill : DrawingMode()
+
+    /** [PolygonFill] clearing the shape instead of filling it. */
+    object PolygonErase : DrawingMode()
     object SelectLasso : DrawingMode()
     object SelectRect : DrawingMode()
     object SelectWand : DrawingMode()
@@ -41,26 +51,42 @@ sealed class DrawingMode {
  */
 data class PathPoint(val position: Offset, val isCorner: Boolean = false)
 
-/** Either side of the lasso fill: a traced shape, filled or cleared. */
+/** Any side of the lasso fill: a traced shape, freehand or straight-sided, filled or cleared. */
 val DrawingMode.isLassoFill: Boolean
-    get() = this is DrawingMode.LassoFill || this is DrawingMode.LassoErase
+    get() = this is DrawingMode.LassoFill || this is DrawingMode.LassoErase || isPolygonFill
+
+/** The lasso fill with straight sides, filled or cleared. */
+val DrawingMode.isPolygonFill: Boolean
+    get() = this is DrawingMode.PolygonFill || this is DrawingMode.PolygonErase
 
 /** True for the modes that take pixels away from the layer rather than add them. */
 val DrawingMode.isEraser: Boolean
-    get() = this is DrawingMode.Eraser || this is DrawingMode.StraightLineEraser || this is DrawingMode.LassoErase
+    get() = this is DrawingMode.Eraser || this is DrawingMode.StraightLineEraser ||
+        this is DrawingMode.LassoErase || this is DrawingMode.PolygonErase
+
+/** True for the modes that draw straight: the straight line, and the lasso fill's polygon. */
+val DrawingMode.isLine: Boolean
+    get() = this is DrawingMode.StraightLine || this is DrawingMode.StraightLineEraser || isPolygonFill
 
 /**
- * This mode with the eraser [on] or off, keeping its shape: a straight line stays a straight
- * line and a lasso fill a lasso fill. Everything without an eraser of its own comes out as
- * the freehand brush or eraser.
+ * The mode with the given shape and eraser, staying within its tool: the lasso fill stays a
+ * lasso fill, and everything else comes out as the brush - freehand or straight line, brush or
+ * eraser. Both of the mode satellite's toggles go through here, so neither can drop the other.
  */
-fun DrawingMode.withEraser(on: Boolean): DrawingMode = when (this) {
-    is DrawingMode.StraightLine, is DrawingMode.StraightLineEraser ->
-        if (on) DrawingMode.StraightLineEraser else DrawingMode.StraightLine
-    is DrawingMode.LassoFill, is DrawingMode.LassoErase ->
-        if (on) DrawingMode.LassoErase else DrawingMode.LassoFill
-    else -> if (on) DrawingMode.Eraser else DrawingMode.Freehand
-}
+private fun DrawingMode.with(line: Boolean, eraser: Boolean): DrawingMode =
+    if (isLassoFill) when {
+        line -> if (eraser) DrawingMode.PolygonErase else DrawingMode.PolygonFill
+        else -> if (eraser) DrawingMode.LassoErase else DrawingMode.LassoFill
+    } else when {
+        line -> if (eraser) DrawingMode.StraightLineEraser else DrawingMode.StraightLine
+        else -> if (eraser) DrawingMode.Eraser else DrawingMode.Freehand
+    }
+
+/** This mode with the eraser [on] or off, keeping its shape. */
+fun DrawingMode.withEraser(on: Boolean): DrawingMode = with(line = isLine, eraser = on)
+
+/** This mode drawing straight, or freehand, keeping its eraser. */
+fun DrawingMode.withLine(on: Boolean): DrawingMode = with(line = on, eraser = isEraser)
 
 /** True for every tool whose pen gesture manipulates the selection instead of painting. */
 fun DrawingMode.isSelectionTool(): Boolean =

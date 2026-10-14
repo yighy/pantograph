@@ -193,6 +193,10 @@ internal fun DrawButton(
                 Triple(Icons.Rounded.FormatPaint, "Lasso fill active", MaterialTheme.colorScheme.primaryContainer)
             drawingMode is DrawingMode.LassoErase ->
                 Triple(EraserIcon, "Lasso erase active", MaterialTheme.colorScheme.primaryContainer)
+            drawingMode is DrawingMode.PolygonFill ->
+                Triple(Icons.Rounded.FormatPaint, "Polygon fill active", MaterialTheme.colorScheme.primaryContainer)
+            drawingMode is DrawingMode.PolygonErase ->
+                Triple(EraserIcon, "Polygon erase active", MaterialTheme.colorScheme.primaryContainer)
             drawingMode is DrawingMode.SelectLasso ->
                 Triple(Icons.Rounded.Polyline, "Lasso select active", MaterialTheme.colorScheme.primaryContainer)
             drawingMode is DrawingMode.SelectRect ->

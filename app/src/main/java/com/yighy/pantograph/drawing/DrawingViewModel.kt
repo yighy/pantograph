@@ -394,8 +394,12 @@ class DrawingViewModel(
                     val points = state.currentPath?.points.orEmpty()
                     // A point per pixel of travel at most: a slow hand would otherwise pile up
                     // thousands of samples on top of each other, and every one is walked again
-                    // each time the shape is repainted.
-                    val grown = if (points.isEmpty() || (newBrushPosition - points.last()).getDistance() >= LASSO_FILL_STEP) {
+                    // each time the shape is repainted. The polygon stores nothing here: its
+                    // corners are put down by the drawing finger lifting (setDrawFinger), and
+                    // between them the side being pulled is just the cursor.
+                    val grown = if (!mode.isPolygonFill &&
+                        (points.isEmpty() || (newBrushPosition - points.last()).getDistance() >= LASSO_FILL_STEP)
+                    ) {
                         points + newBrushPosition
                     } else points
                     // The whole shape again, with the closing edge to where the cursor is now,
@@ -880,14 +884,7 @@ class DrawingViewModel(
     fun toggleDrawingMode() {
         selection.finalizeActive()
         session.update {
-            val newMode = when (it.drawingMode) {
-                is DrawingMode.Freehand -> DrawingMode.StraightLine
-                is DrawingMode.StraightLine -> DrawingMode.Freehand
-                is DrawingMode.Eraser -> DrawingMode.StraightLineEraser
-                is DrawingMode.StraightLineEraser -> DrawingMode.Eraser
-                else -> DrawingMode.StraightLine
-            }
-            it.copy(drawingMode = newMode, isEyeDropperMode = false)
+            it.copy(drawingMode = it.drawingMode.withLine(!it.drawingMode.isLine), isEyeDropperMode = false)
         }
     }
 
@@ -1177,6 +1174,22 @@ class DrawingViewModel(
         drawFingerDown = down
         if (down) anchorStartTravel = Offset.Zero
         if (!down && session.value.isAnchorArmed && session.value.isPenDown) endAnchorLine()
+        if (!down) placePolygonCorner()
+    }
+
+    /**
+     * The drawing finger lifted mid-polygon: the side it was pulling stays where it is, as a
+     * corner, and the next drag pulls a new side out from it. A lift that has not moved off the
+     * last corner adds nothing, so a tap or a finger set down and lifted again cannot stack up
+     * corners that would only fold the outline back on itself.
+     */
+    private fun placePolygonCorner() {
+        val state = session.value
+        if (!state.isPenDown || !state.drawingMode.isPolygonFill) return
+        val points = state.currentPath?.points ?: return
+        val corner = state.brushPosition
+        if (points.isNotEmpty() && (corner - points.last()).getDistance() < LASSO_FILL_STEP) return
+        session.update { it.copy(currentPath = it.currentPath?.copy(points = points + corner)) }
     }
 
     /**

@@ -152,7 +152,7 @@ fun HoverDrawButton(
             label = "satelliteScale"
         )
 
-        val isLineMode = drawingMode is DrawingMode.StraightLine || drawingMode is DrawingMode.StraightLineEraser
+        val isLineMode = drawingMode.isLine
         val isEraserMode = drawingMode.isEraser
 
         val brushGate = remember { LevelGateState() }
