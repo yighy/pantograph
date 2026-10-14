@@ -9,6 +9,15 @@ and versions follow [Semantic Versioning](https://semver.org/). Full notes for e
 
 ## [Unreleased]
 
+## [0.20.0] - 2026-10-14
+
+### Added
+- **Lasso fill**: hold the button and trace a shape to fill it with the brush colour, previewed live
+  and closed back to where you began. The eraser cell of the mode satellite makes it clear the shape
+  instead.
+- The line cell gives it straight sides: each drag of the drawing finger pulls out a side, and lifting
+  the finger fixes a corner.
+
 ## [0.19.0] - 2026-10-10
 
 ### Added
@@ -170,7 +179,8 @@ and versions follow [Semantic Versioning](https://semver.org/). Full notes for e
 
 Initial release.
 
-[Unreleased]: https://github.com/yighy/pantograph/compare/v0.19.0...HEAD
+[Unreleased]: https://github.com/yighy/pantograph/compare/v0.20.0...HEAD
+[0.20.0]: https://github.com/yighy/pantograph/compare/v0.19.0...v0.20.0
 [0.19.0]: https://github.com/yighy/pantograph/compare/v0.18.0...v0.19.0
 [0.18.0]: https://github.com/yighy/pantograph/compare/v0.17.2...v0.18.0
 [0.17.2]: https://github.com/yighy/pantograph/compare/v0.17.1...v0.17.2

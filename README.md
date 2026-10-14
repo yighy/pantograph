@@ -44,6 +44,7 @@ away from the canvas.
 
 **Tools**
 - Freehand, straight line, eraser, bucket fill, linear gradient.
+- Lasso fill: trace a shape, freehand or with straight sides, to fill it or erase it.
 - Path: place points and bend a curve through them.
 - Selection: lasso, rectangle, magic wand, colour select — move, transform, duplicate, invert.
 - Lazy mode, for smooth curves.
