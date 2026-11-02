@@ -9,6 +9,17 @@ and versions follow [Semantic Versioning](https://semver.org/). Full notes for e
 
 ## [Unreleased]
 
+## [0.21.0] - 2026-11-03
+
+### Added
+- **Chain**: with the straight line in hand, the button held draws a polyline. Each drag of the
+  drawing finger pulls out a side, and lifting the finger fixes a corner. It lands as one stroke,
+  taken back by one undo. Chain and Anchor turn each other off.
+
+### Fixed
+- A tap on the canvas while the button was held lifted the pen, ending a lasso fill polygon or the
+  stroke under way.
+
 ## [0.20.0] - 2026-10-14
 
 ### Added
@@ -179,7 +190,8 @@ and versions follow [Semantic Versioning](https://semver.org/). Full notes for e
 
 Initial release.
 
-[Unreleased]: https://github.com/yighy/pantograph/compare/v0.20.0...HEAD
+[Unreleased]: https://github.com/yighy/pantograph/compare/v0.21.0...HEAD
+[0.21.0]: https://github.com/yighy/pantograph/compare/v0.20.0...v0.21.0
 [0.20.0]: https://github.com/yighy/pantograph/compare/v0.19.0...v0.20.0
 [0.19.0]: https://github.com/yighy/pantograph/compare/v0.18.0...v0.19.0
 [0.18.0]: https://github.com/yighy/pantograph/compare/v0.17.2...v0.18.0

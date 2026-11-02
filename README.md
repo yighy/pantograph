@@ -49,6 +49,7 @@ away from the canvas.
 - Selection: lasso, rectangle, magic wand, colour select — move, transform, duplicate, invert.
 - Lazy mode, for smooth curves.
 - Anchor: while you hold the button, every line starts from the same point, which the finger on the button moves.
+- Chain: while you hold the button, straight lines follow on end to end, one corner each time you lift your finger.
 - Fine: slow the cursor down even with the pen up.
 - Loupe: a magnified view of the canvas under the brush.
 
