@@ -351,10 +351,11 @@ private fun ToolsMenuButton(
     // reads it, and the chip row builds itself from PinnableTool.isActive.
     val isFineCursor by remember(viewModel) { viewModel.uiState.map { it.isFineCursor }.distinctUntilChanged() }.collectAsState(false)
     val isAnchorActive by remember(viewModel) { viewModel.uiState.map { it.isAnchorActive }.distinctUntilChanged() }.collectAsState(false)
+    val isChainActive by remember(viewModel) { viewModel.uiState.map { it.isChainActive }.distinctUntilChanged() }.collectAsState(false)
     val isLoupeActive by remember(viewModel) { viewModel.uiState.map { it.isLoupeActive }.distinctUntilChanged() }.collectAsState(false)
     val isBucketFill = drawingMode is DrawingMode.BucketFill
     val isSelectionMode = drawingMode.isSelectionTool()
-    val isActive = showTools || isBucketFill || isLazyModeActive || isAnchorActive || isFineCursor || isLoupeActive || isSelectionMode || drawingMode is DrawingMode.Gradient || drawingMode.isLassoFill
+    val isActive = showTools || isBucketFill || isLazyModeActive || isAnchorActive || isChainActive || isFineCursor || isLoupeActive || isSelectionMode || drawingMode is DrawingMode.Gradient || drawingMode.isLassoFill
 
     Box {
         GroupedButton(GroupPosition.First, onClick = { showTools = true }, pressed = isActive) {
@@ -452,6 +453,15 @@ private fun ToolsMenuButton(
                         onTogglePin = { viewModel.togglePinnedTool(PinnableTool.Anchor) }
                     ) {
                         viewModel.toggleAnchor()
+                        showTools = false
+                    }
+                    // Anchor's other half, so beside it: lines from the end of the last one.
+                    ExtraToolItem(
+                        "Chain", isChainActive, Icons.Rounded.Link,
+                        isPinned = pinnedTools.contains(PinnableTool.Chain),
+                        onTogglePin = { viewModel.togglePinnedTool(PinnableTool.Chain) }
+                    ) {
+                        viewModel.toggleChain()
                         showTools = false
                     }
                     ExtraToolItem(

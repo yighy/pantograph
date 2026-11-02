@@ -420,6 +420,20 @@ class DrawingViewModel(
                     needsRedraw = true
                 }
 
+                // Before the plain straight line, which it is one of. The stored points are the
+                // corners; the side being pulled runs from the last of them to the cursor.
+                state.chainApplies -> {
+                    val corners = state.currentPath?.points.orEmpty()
+                    engine.drawPolyline(corners + newBrushPosition, state)
+                    session.update { it.copy(
+                        cursorPosition = newPosition,
+                        brushPosition = newBrushPosition,
+                        renderVersion = it.renderVersion + 1
+                    ) }
+                    engine.addDistance(travelled)
+                    return
+                }
+
                 mode is DrawingMode.StraightLine || mode is DrawingMode.StraightLineEraser -> {
                     val start = state.currentPath?.points?.get(0) ?: newBrushPosition
                     // Repaint the whole preview line: an accurate one, custom tips and jitter included
@@ -447,9 +461,11 @@ class DrawingViewModel(
     }
 
     fun togglePen() {
-        // With the anchor armed, the drawing finger's touches are the lines themselves. A tap
-        // is a line too short to see, not a request to latch the pen.
-        if (session.value.isAnchorArmed) return
+        // While the button holds the pen, the drawing finger's touches are part of what it is
+        // drawing - with the anchor armed each is a line, in a polygon or a chain a lift is a
+        // corner. A tap is a touch too short to see, not a request to latch the pen; taken as
+        // one, it lifted the pen out from under the held button and ended the shape.
+        if (buttonHeld || session.value.isAnchorArmed) return
         // In the path tool the pen is a hold, so there is no latched state to invert. The
         // canvas tap has no press and release of its own to offer, so it alternates instead:
         // hold the button for a placement you can adjust, tap the canvas for a quick one.
@@ -576,6 +592,16 @@ class DrawingViewModel(
     private fun commitCurrentPath() {
         val state = session.value
         val path = state.currentPath ?: return
+        if (state.chainApplies) {
+            // The corners, and the side still being pulled when the pen came up. One stroke
+            // for the lot, so the joins are not stamped twice and one undo takes it all back.
+            // A press that never moved draws nothing, as a straight line does.
+            val points = path.points + state.brushPosition
+            if (points.size == 2 && points[0] == points[1]) return
+            engine.drawPolyline(points, state)
+            session.bumpRender()
+            return
+        }
         if (path.points.size < 2) return
 
         engine.drawStraightLine(path.points.first(), path.points.last(), state)
@@ -1107,6 +1133,9 @@ class DrawingViewModel(
     /** One finger is on the canvas, steering the cursor. */
     private var drawFingerDown = false
 
+    /** The floating button is held down. Between [pressPen] and [releasePen]. */
+    private var buttonHeld = false
+
     /** Distance drawn across the whole hold - see getCurrentStrokeDistance. */
     private var anchorHoldDistance = 0f
 
@@ -1117,7 +1146,12 @@ class DrawingViewModel(
     private val anchorStartSlopPx = android.view.ViewConfiguration.get(context).scaledTouchSlop.toFloat()
 
     fun toggleAnchor() {
-        session.update { it.copy(isAnchorActive = !it.isAnchorActive) }
+        session.update { it.copy(isAnchorActive = !it.isAnchorActive, isChainActive = false) }
+    }
+
+    /** Lines from the end of the last rather than from one point, so it and Anchor exclude each other. */
+    fun toggleChain() {
+        session.update { it.copy(isChainActive = !it.isChainActive, isAnchorActive = false) }
     }
 
     /**
@@ -1129,6 +1163,7 @@ class DrawingViewModel(
 
     /** The floating button went down. */
     fun pressPen() {
+        buttonHeld = true
         if (anchorApplies(session.value)) {
             // The anchor exists from the press, where the cursor is, rather than from the first
             // line: the finger on the button can steer it before anything is drawn, and there
@@ -1159,6 +1194,7 @@ class DrawingViewModel(
 
     /** The floating button came up. */
     fun releasePen() {
+        buttonHeld = false
         if (session.value.isAnchorArmed) {
             session.update { it.copy(isAnchorArmed = false, anchorPoint = null) }
             // A line still being drawn ends where it is: the hold is over, so there is no next
@@ -1174,18 +1210,18 @@ class DrawingViewModel(
         drawFingerDown = down
         if (down) anchorStartTravel = Offset.Zero
         if (!down && session.value.isAnchorArmed && session.value.isPenDown) endAnchorLine()
-        if (!down) placePolygonCorner()
+        if (!down) placeCorner()
     }
 
     /**
-     * The drawing finger lifted mid-polygon: the side it was pulling stays where it is, as a
-     * corner, and the next drag pulls a new side out from it. A lift that has not moved off the
-     * last corner adds nothing, so a tap or a finger set down and lifted again cannot stack up
-     * corners that would only fold the outline back on itself.
+     * The drawing finger lifted mid-polygon or mid-chain: the side it was pulling stays where it
+     * is, as a corner, and the next drag pulls a new side out from it. A lift that has not moved
+     * off the last corner adds nothing, so a tap or a finger set down and lifted again cannot
+     * stack up corners that would only fold the outline back on itself.
      */
-    private fun placePolygonCorner() {
+    private fun placeCorner() {
         val state = session.value
-        if (!state.isPenDown || !state.drawingMode.isPolygonFill) return
+        if (!state.isPenDown || !(state.drawingMode.isPolygonFill || state.chainApplies)) return
         val points = state.currentPath?.points ?: return
         val corner = state.brushPosition
         if (points.isNotEmpty() && (corner - points.last()).getDistance() < LASSO_FILL_STEP) return

@@ -12,6 +12,7 @@ import androidx.compose.material.icons.rounded.Timeline
 import androidx.compose.material.icons.rounded.Cable
 import androidx.compose.material.icons.rounded.Fullscreen
 import androidx.compose.material.icons.rounded.Anchor
+import androidx.compose.material.icons.rounded.Link
 import androidx.compose.material.icons.rounded.Replay
 import androidx.compose.material.icons.rounded.ZoomIn
 import androidx.compose.material.icons.rounded.CenterFocusStrong
@@ -40,6 +41,8 @@ enum class PinnableTool(
      * button never has to be let go between lines.
      */
     Anchor("Anchor", Icons.Rounded.Anchor),
+    /** Straight lines chained end to end while the button is held: a polyline in one hold. */
+    Chain("Chain", Icons.Rounded.Link),
     /**
      * Puts the raised cursor on Draw Sensitivity too, so the scale never changes under the
      * finger at pen-down.
@@ -91,6 +94,7 @@ enum class PinnableTool(
         LassoFill -> state.drawingMode.isLassoFill
         Lazy -> state.isLazyModeActive
         Anchor -> state.isAnchorActive
+        Chain -> state.isChainActive
         Fine -> state.isFineCursor
         Loupe -> state.isLoupeActive
         Fullscreen -> state.isFullscreen
@@ -115,6 +119,7 @@ enum class PinnableTool(
             Fill -> viewModel.setBucketFillMode()
             Lazy -> viewModel.toggleLazyMode()
             Anchor -> viewModel.toggleAnchor()
+            Chain -> viewModel.toggleChain()
             Fine -> viewModel.toggleFineCursor()
             Loupe -> viewModel.toggleLoupe()
             Fullscreen -> viewModel.toggleFullscreen()

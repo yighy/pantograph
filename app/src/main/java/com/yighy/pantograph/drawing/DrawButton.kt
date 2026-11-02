@@ -40,6 +40,7 @@ internal fun DrawButton(
     isEyeDropperMode: Boolean,
     isPenEngaged: Boolean,
     anchorApplies: Boolean,
+    chainApplies: Boolean,
     onPositionChanged: (Float, Float) -> Unit
 ) {
     val haptics = LocalHapticFeedback.current
@@ -223,6 +224,7 @@ internal fun DrawButton(
         // rather than down, so the pen glyph does not flick back to the hand mid-stroke.
         val fabIcon = armed?.first ?: when {
             anchorApplies -> Icons.Rounded.Anchor
+            chainApplies -> Icons.Rounded.Link
             isPenEngaged -> Icons.Default.Edit
             else -> Icons.Default.TouchApp
         }
@@ -233,6 +235,7 @@ internal fun DrawButton(
                 if (isPenEngaged) "Placing a path point" else "Hold to place a path point"
             armed != null -> armed.second
             anchorApplies -> if (isPenEngaged) "Drawing from the anchor" else "Hold to draw from an anchor"
+            chainApplies -> if (isPenEngaged) "Drawing a chain of lines" else "Hold to draw a chain of lines"
             isPenEngaged -> "Drawing"
             else -> "Hold to draw"
         }

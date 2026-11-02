@@ -371,6 +371,13 @@ data class DrawingState(
      */
     val anchorPoint: CursorAnchor? = null,
     /**
+     * Straight lines chain: the button held is one polyline, each drag of the drawing finger
+     * pulling a side out from the last corner and each lift fixing the next. Anchor's other
+     * half - every line from the end of the last instead of from the same point - so turning
+     * one on turns the other off. Not persisted, like [isAnchorActive].
+     */
+    val isChainActive: Boolean = false,
+    /**
      * Extends Draw Sensitivity to the raised pen, rather than letting it bite only while drawing.
      *
      * Two things come with that. The scale stops changing under the finger at pen-down; and
@@ -499,6 +506,14 @@ data class DrawingState(
         is DrawingMode.StraightLine, is DrawingMode.StraightLineEraser -> true
         else -> false
     }
+
+    /**
+     * The straight line in hand draws a chain: Chain is on, and the line is the brush's or the
+     * eraser's. A freehand stroke already carries on from where it was, so only straight lines
+     * have anything to gain.
+     */
+    val chainApplies: Boolean get() = isChainActive && !isEyeDropperMode &&
+        (drawingMode is DrawingMode.StraightLine || drawingMode is DrawingMode.StraightLineEraser)
 
     /**
      * Index of the path point the cursor is close enough to pick up, or -1.
