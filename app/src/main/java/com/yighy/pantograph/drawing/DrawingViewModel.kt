@@ -424,7 +424,7 @@ class DrawingViewModel(
                 // corners; the side being pulled runs from the last of them to the cursor.
                 state.chainApplies -> {
                     val corners = state.currentPath?.points.orEmpty()
-                    engine.drawPolyline(corners + newBrushPosition, state)
+                    engine.drawChain(corners, newBrushPosition, state)
                     session.update { it.copy(
                         cursorPosition = newPosition,
                         brushPosition = newBrushPosition,
@@ -596,9 +596,8 @@ class DrawingViewModel(
             // The corners, and the side still being pulled when the pen came up. One stroke
             // for the lot, so the joins are not stamped twice and one undo takes it all back.
             // A press that never moved draws nothing, as a straight line does.
-            val points = path.points + state.brushPosition
-            if (points.size == 2 && points[0] == points[1]) return
-            engine.drawPolyline(points, state)
+            if (path.points.size == 1 && path.points[0] == state.brushPosition) return
+            engine.drawChain(path.points, state.brushPosition, state)
             session.bumpRender()
             return
         }

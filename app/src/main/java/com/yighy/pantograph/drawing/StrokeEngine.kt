@@ -120,6 +120,21 @@ class StrokeEngine {
     private val strokeDirtyRect = RectF()
     private var strokeDirtyValid = false
 
+    // Chain: the stroke buffer as it stood at the last corner - every fixed side and nothing of
+    // the one being pulled - with the spacing and dirty box it had there. Each sample puts back
+    // the patch the live side covered and paints that side alone, so a sample costs one side
+    // however many corners came before it. Repainting the whole polyline per sample made a long
+    // chain slow down with every corner.
+    private var chainBase: Bitmap? = null
+    private var chainBaseCanvas: Canvas? = null
+    private var chainCorners = 0
+    private var chainDistance = 0f
+    private val chainDirtyRect = RectF()
+    private var chainDirtyValid = false
+    private val liveSideRect = Rect()
+    private var liveSideValid = false
+    private val copyPaint = Paint().apply { xfermode = PorterDuffXfermode(PorterDuff.Mode.SRC) }
+
     /** Distance painted since pen-down. The FAB reads it to tell drawing from dragging itself. */
     var strokeDistance = 0f
         private set
@@ -138,6 +153,10 @@ class StrokeEngine {
         val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
         strokeBitmap = bitmap
         strokeCanvas = Canvas(bitmap)
+        // The chain's copy has to match the buffer it restores; the next chain makes a new one.
+        chainBase?.recycle()
+        chainBase = null
+        chainBaseCanvas = null
         return true
     }
 
@@ -159,6 +178,7 @@ class StrokeEngine {
     fun beginStroke(pos: Offset, state: DrawingState) {
         clearTarget()
         resetSpacing(state)
+        chainCorners = 0
         strokeDistance = 0f
         carryingColor = false
         smoothedSpeed = 0f
@@ -282,6 +302,84 @@ class StrokeEngine {
         for (i in 0 until points.size - 1) {
             drawSegment(points[i], points[i + 1], state, seed = i.toLong())
         }
+    }
+
+    /**
+     * The buffer as [drawPolyline] would leave it for [corners] followed by [end], built up a
+     * side at a time: sides between corners are painted once, when their corner is placed, and
+     * kept; only the side from the last corner to [end] is repainted per call. Same stamps,
+     * spacing and seeds as [drawPolyline], so what lands is what was shown.
+     */
+    fun drawChain(corners: List<Offset>, end: Offset, state: DrawingState) {
+        val stroke = strokeBitmap ?: return
+        val canvas = strokeCanvas ?: return
+        if (corners.isEmpty()) return
+        if (chainCorners == 0 || corners.size < chainCorners) {
+            clearTarget()
+            resetSpacing(state)
+            val base = chainBase
+            if (base == null || base.width != stroke.width || base.height != stroke.height) {
+                base?.recycle()
+                chainBase = Bitmap.createBitmap(stroke.width, stroke.height, Bitmap.Config.ARGB_8888)
+                chainBaseCanvas = Canvas(chainBase!!)
+            } else {
+                base.eraseColor(android.graphics.Color.TRANSPARENT)
+            }
+            chainCorners = 1
+            chainDistance = distanceSinceLastStamp
+            chainDirtyValid = false
+            liveSideValid = false
+        }
+        val base = chainBase ?: return
+        val baseCanvas = chainBaseCanvas ?: return
+
+        // Back to the buffer as it stood at the last corner: the live side's patch restored, and
+        // the spacing and dirty box it carried there.
+        fun restoreBase() {
+            if (liveSideValid) canvas.drawBitmap(base, liveSideRect, liveSideRect, copyPaint)
+            liveSideValid = false
+            distanceSinceLastStamp = chainDistance
+            strokeDirtyRect.set(chainDirtyRect)
+            strokeDirtyValid = chainDirtyValid
+        }
+
+        // Paints one side and reports the patch it alone touched, folding it into the stroke's
+        // dirty box afterwards.
+        fun paintSide(index: Int, from: Offset, to: Offset, touched: Rect): Boolean {
+            val keep = RectF(strokeDirtyRect)
+            val keepValid = strokeDirtyValid
+            strokeDirtyValid = false
+            drawSegment(from, to, state, seed = index.toLong())
+            val painted = strokeDirtyValid
+            if (painted) {
+                strokeDirtyRect.roundOut(touched)
+                touched.inset(-2, -2)
+                if (!touched.intersect(0, 0, stroke.width, stroke.height)) touched.setEmpty()
+                if (keepValid) strokeDirtyRect.union(keep)
+            } else {
+                strokeDirtyRect.set(keep)
+                strokeDirtyValid = keepValid
+            }
+            return painted && !touched.isEmpty
+        }
+
+        // Sides fixed since the last call: painted once, then copied into the base.
+        val fixed = Rect()
+        while (chainCorners < corners.size) {
+            restoreBase()
+            val i = chainCorners - 1
+            if (paintSide(i, corners[i], corners[i + 1], fixed)) {
+                baseCanvas.drawBitmap(stroke, fixed, fixed, copyPaint)
+            }
+            chainCorners++
+            chainDistance = distanceSinceLastStamp
+            chainDirtyRect.set(strokeDirtyRect)
+            chainDirtyValid = strokeDirtyValid
+        }
+
+        // The side still being pulled.
+        restoreBase()
+        liveSideValid = paintSide(corners.size - 1, corners.last(), end, liveSideRect)
     }
 
     /**
