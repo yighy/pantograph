@@ -9,6 +9,12 @@ and versions follow [Semantic Versioning](https://semver.org/). Full notes for e
 
 ## [Unreleased]
 
+## [0.21.1] - 2026-11-17
+
+### Fixed
+- A long chain slowed down with every corner, as each move repainted every side drawn so far. Only
+  the side being pulled is repainted now.
+
 ## [0.21.0] - 2026-11-03
 
 ### Added
@@ -190,7 +196,8 @@ and versions follow [Semantic Versioning](https://semver.org/). Full notes for e
 
 Initial release.
 
-[Unreleased]: https://github.com/yighy/pantograph/compare/v0.21.0...HEAD
+[Unreleased]: https://github.com/yighy/pantograph/compare/v0.21.1...HEAD
+[0.21.1]: https://github.com/yighy/pantograph/compare/v0.21.0...v0.21.1
 [0.21.0]: https://github.com/yighy/pantograph/compare/v0.20.0...v0.21.0
 [0.20.0]: https://github.com/yighy/pantograph/compare/v0.19.0...v0.20.0
 [0.19.0]: https://github.com/yighy/pantograph/compare/v0.18.0...v0.19.0
