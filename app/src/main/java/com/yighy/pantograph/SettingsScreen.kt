@@ -2,6 +2,7 @@ package com.yighy.pantograph
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.verticalScroll
@@ -73,9 +74,15 @@ fun SettingsScreen(
 
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+        // A step down from the cards, so they stand out from the page they sit on.
+        containerColor = MaterialTheme.colorScheme.surfaceContainer,
         topBar = {
             TopAppBar(
                 title = { Text("Settings") },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                    scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer
+                ),
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back")
@@ -93,124 +100,142 @@ fun SettingsScreen(
                 .padding(bottom = 24.dp)
         ) {
             SectionHeader("Appearance")
-            ChoiceRow(
-                label = "Theme",
-                options = listOf(AppTheme.SYSTEM, AppTheme.LIGHT, AppTheme.DARK),
-                selected = appTheme,
-                optionLabel = { it.name.lowercase().replaceFirstChar { c -> c.uppercase() } },
-                onSelect = { scope.launch { preferenceManager.setAppTheme(it) } }
-            )
-            SwitchRow("Dynamic color", subtitle = "From your wallpaper", checked = dynamicColor) {
-                scope.launch { preferenceManager.setDynamicColor(it) }
-            }
-            SwitchRow("Hide status bar", checked = hideStatusBar) {
-                scope.launch { preferenceManager.setHideStatusBar(it) }
-            }
-
-            SectionHeader("Drawing")
-            StepperRow(
-                label = "Undo history",
-                value = historyLimit,
-                range = 1..20,
-                onChange = { scope.launch { preferenceManager.setHistoryLimit(it) } }
-            )
-            SliderRow(
-                label = "Cursor thickness",
-                valueLabel = "%.1f".format(cursorThickness),
-                value = cursorThickness,
-                range = 0.5f..5.0f,
-                onChange = { scope.launch { preferenceManager.setCursorThickness(it) } }
-            )
-            SwitchRow(
-                "Offscreen cursor arrow",
-                subtitle = "Points to the cursor when it's off screen",
-                checked = offscreenCursorArrow
-            ) { scope.launch { preferenceManager.setOffscreenCursorArrow(it) } }
-            SwitchRow(
-                "Undo returns the cursor",
-                subtitle = "Back to where the stroke began",
-                checked = undoRestoresCursor
-            ) { scope.launch { preferenceManager.setUndoRestoresCursor(it) } }
-            SwitchRow(
-                "Keep undone strokes",
-                subtitle = "Leaves them faintly, to redraw over",
-                checked = keepUndoneStrokes
-            ) { scope.launch { preferenceManager.setKeepUndoneStrokes(it) } }
-
-            SectionHeader("Button")
-            SliderRow(
-                label = "Size",
-                valueLabel = "${fabSize.toInt()} dp",
-                value = fabSize,
-                range = 40f..120f,
-                onChange = { scope.launch { preferenceManager.setFabSize(it) } }
-            )
-            ChoiceRow(
-                label = "Move distance",
-                subtitle = "How far to drag before the button moves",
-                options = MoveDistances.map { it.second },
-                // The stored value can sit between the choices, from before they existed: the
-                // nearest one is what it shows as.
-                selected = MoveDistances.minBy { abs(it.second - fabDragThreshold) }.second,
-                optionLabel = { px -> MoveDistances.first { it.second == px }.first },
-                onSelect = { scope.launch { preferenceManager.setFabDragThreshold(it) } }
-            )
-            SliderRow(
-                label = "Satellite sensitivity",
-                valueLabel = "%.1fx".format(satelliteGateSensitivity),
-                value = satelliteGateSensitivity,
-                range = 0.25f..2.0f,
-                onChange = { scope.launch { preferenceManager.setSatelliteGateSensitivity(it) } }
-            )
-
-            SectionHeader("Updates")
-            SwitchRow(
-                "Check for updates",
-                subtitle = "Once a day, on GitHub",
-                checked = checkForUpdates
-            ) { scope.launch { preferenceManager.setCheckForUpdates(it) } }
-            val available = updateResult as? UpdateChecker.Result.Available
-            ActionRow(
-                label = if (available != null) "View release" else "Check now",
-                subtitle = when (val r = updateResult) {
-                    null -> when {
-                        checking -> "Checking..."
-                        lastUpdateCheck <= 0L -> "Never checked"
-                        else -> "Last checked " + DateFormat
-                            .getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT)
-                            .format(Date(lastUpdateCheck))
-                    }
-                    is UpdateChecker.Result.Available -> "Version ${r.tag.removePrefix("v")} is available"
-                    UpdateChecker.Result.UpToDate -> "You have the latest version"
-                    UpdateChecker.Result.Failed -> "Couldn't reach GitHub"
-                },
-                enabled = !checking
-            ) {
-                if (available != null) {
-                    uriHandler.openUri(ReleaseVersion.pageUrl(available.tag))
-                } else {
-                    // Asked for by hand, so it goes out even with the automatic check off.
-                    checking = true
-                    updateResult = null
-                    scope.launch {
-                        updateResult = updateChecker.check()
-                        checking = false
-                    }
+            SettingsCard {
+                ChoiceRow(
+                    label = "Theme",
+                    options = listOf(AppTheme.SYSTEM, AppTheme.LIGHT, AppTheme.DARK),
+                    selected = appTheme,
+                    optionLabel = { it.name.lowercase().replaceFirstChar { c -> c.uppercase() } },
+                    onSelect = { scope.launch { preferenceManager.setAppTheme(it) } }
+                )
+                CardDivider()
+                SwitchRow("Dynamic color", subtitle = "From your wallpaper", checked = dynamicColor) {
+                    scope.launch { preferenceManager.setDynamicColor(it) }
+                }
+                CardDivider()
+                SwitchRow("Hide status bar", checked = hideStatusBar) {
+                    scope.launch { preferenceManager.setHideStatusBar(it) }
                 }
             }
 
-            // Features that work but are still being tried out: off until chosen here, so no one
-            // meets them by accident. One switch for all of them, and the subtitle names what it
-            // turns on - keep it in step as features come and go.
-            SectionHeader("Experimental")
-            SwitchRow(
-                "Experimental features",
-                subtitle = "Timelapse",
-                checked = experimentalFeatures
-            ) { scope.launch { preferenceManager.setExperimentalFeatures(it) } }
+            SectionHeader("Drawing")
+            SettingsCard {
+                StepperRow(
+                    label = "Undo history",
+                    value = historyLimit,
+                    range = 1..20,
+                    onChange = { scope.launch { preferenceManager.setHistoryLimit(it) } }
+                )
+                CardDivider()
+                SliderRow(
+                    label = "Cursor thickness",
+                    valueLabel = "%.1f".format(cursorThickness),
+                    value = cursorThickness,
+                    range = 0.5f..5.0f,
+                    onChange = { scope.launch { preferenceManager.setCursorThickness(it) } }
+                )
+                CardDivider()
+                SwitchRow(
+                    "Offscreen cursor arrow",
+                    subtitle = "Points to the cursor when it's off screen",
+                    checked = offscreenCursorArrow
+                ) { scope.launch { preferenceManager.setOffscreenCursorArrow(it) } }
+                CardDivider()
+                SwitchRow(
+                    "Undo returns the cursor",
+                    subtitle = "Back to where the stroke began",
+                    checked = undoRestoresCursor
+                ) { scope.launch { preferenceManager.setUndoRestoresCursor(it) } }
+                CardDivider()
+                SwitchRow(
+                    "Keep undone strokes",
+                    subtitle = "Leaves them faintly, to redraw over",
+                    checked = keepUndoneStrokes
+                ) { scope.launch { preferenceManager.setKeepUndoneStrokes(it) } }
+            }
 
-            SectionHeader("About")
-            ValueRow("Version", versionName)
+            SectionHeader("Floating button")
+            SettingsCard {
+                SliderRow(
+                    label = "Size",
+                    valueLabel = "${fabSize.toInt()} dp",
+                    value = fabSize,
+                    range = 40f..120f,
+                    onChange = { scope.launch { preferenceManager.setFabSize(it) } }
+                )
+                CardDivider()
+                ChoiceRow(
+                    label = "Move distance",
+                    subtitle = "How far to drag before the button moves",
+                    options = MoveDistances.map { it.second },
+                    // The stored value can sit between the choices, from before they existed: the
+                    // nearest one is what it shows as.
+                    selected = MoveDistances.minBy { abs(it.second - fabDragThreshold) }.second,
+                    optionLabel = { px -> MoveDistances.first { it.second == px }.first },
+                    onSelect = { scope.launch { preferenceManager.setFabDragThreshold(it) } }
+                )
+                CardDivider()
+                SliderRow(
+                    label = "Satellite sensitivity",
+                    valueLabel = "%.1fx".format(satelliteGateSensitivity),
+                    value = satelliteGateSensitivity,
+                    range = 0.25f..2.0f,
+                    onChange = { scope.launch { preferenceManager.setSatelliteGateSensitivity(it) } }
+                )
+            }
+
+            // The app itself rather than the drawing: updates, what is still being tried out,
+            // and which version this is. Three sections of a row or two each read as clutter at
+            // the foot of the page; one card says they belong together.
+            SectionHeader("App")
+            SettingsCard {
+                SwitchRow(
+                    "Check for updates",
+                    subtitle = "Once a day, on GitHub",
+                    checked = checkForUpdates
+                ) { scope.launch { preferenceManager.setCheckForUpdates(it) } }
+                CardDivider()
+                val available = updateResult as? UpdateChecker.Result.Available
+                ActionRow(
+                    label = if (available != null) "View release" else "Check now",
+                    subtitle = when (val r = updateResult) {
+                        null -> when {
+                            checking -> "Checking..."
+                            lastUpdateCheck <= 0L -> "Never checked"
+                            else -> "Last checked " + DateFormat
+                                .getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT)
+                                .format(Date(lastUpdateCheck))
+                        }
+                        is UpdateChecker.Result.Available -> "Version ${r.tag.removePrefix("v")} is available"
+                        UpdateChecker.Result.UpToDate -> "You have the latest version"
+                        UpdateChecker.Result.Failed -> "Couldn't reach GitHub"
+                    },
+                    enabled = !checking
+                ) {
+                    if (available != null) {
+                        uriHandler.openUri(ReleaseVersion.pageUrl(available.tag))
+                    } else {
+                        // Asked for by hand, so it goes out even with the automatic check off.
+                        checking = true
+                        updateResult = null
+                        scope.launch {
+                            updateResult = updateChecker.check()
+                            checking = false
+                        }
+                    }
+                }
+                CardDivider()
+                // Features that work but are still being tried out: off until chosen here, so no
+                // one meets them by accident. One switch for all of them, and the subtitle names
+                // what it turns on - keep it in step as features come and go.
+                SwitchRow(
+                    "Experimental features",
+                    subtitle = "Timelapse",
+                    checked = experimentalFeatures
+                ) { scope.launch { preferenceManager.setExperimentalFeatures(it) } }
+                CardDivider()
+                ValueRow("Version", versionName)
+            }
         }
     }
 }
@@ -219,13 +244,39 @@ fun SettingsScreen(
 // One line each where the setting allows it: the label on the left, what it is set to on the
 // right. A subtitle only where the label alone does not say what the setting does.
 
+/** In line with the text inside the cards rather than with their edges. */
 @Composable
 private fun SectionHeader(title: String) {
     Text(
         text = title,
         style = MaterialTheme.typography.titleSmall,
         color = MaterialTheme.colorScheme.primary,
-        modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 24.dp, bottom = 4.dp)
+        modifier = Modifier.padding(start = 32.dp, end = 32.dp, top = 24.dp, bottom = 8.dp)
+    )
+}
+
+/**
+ * A section's rows on one rounded card, so a section reads as a group at a glance rather than
+ * by counting headers. The rows are the same as on a bare list: the card only holds them.
+ */
+@Composable
+private fun SettingsCard(content: @Composable ColumnScope.() -> Unit) {
+    Surface(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+        shape = RoundedCornerShape(24.dp),
+        color = MaterialTheme.colorScheme.surfaceBright
+    ) {
+        Column(content = content)
+    }
+}
+
+/** The line between two rows of a card, short of its edges as the text is. */
+@Composable
+private fun CardDivider() {
+    HorizontalDivider(
+        modifier = Modifier.padding(horizontal = 16.dp),
+        thickness = 0.5.dp,
+        color = MaterialTheme.colorScheme.outlineVariant
     )
 }
 
@@ -318,7 +369,10 @@ private fun StepperRow(label: String, value: Int, range: IntRange, onChange: (In
     }
 }
 
-/** For settings judged by feel rather than by number. */
+/**
+ * For settings judged by feel rather than by number. On one line, as the app lays out a slider
+ * everywhere else: the name, the track, the value.
+ */
 @Composable
 private fun SliderRow(
     label: String,
@@ -327,14 +381,23 @@ private fun SliderRow(
     range: ClosedFloatingPointRange<Float>,
     onChange: (Float) -> Unit
 ) {
-    Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            RowLabel(label, null, Modifier.weight(1f))
-            if (valueLabel != null) {
-                Text(valueLabel, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
+    Row(
+        modifier = RowModifier.padding(horizontal = 16.dp, vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Text(label, style = MaterialTheme.typography.bodyLarge, maxLines = 2, modifier = Modifier.width(112.dp))
+        Slider(value = value, onValueChange = onChange, valueRange = range, modifier = Modifier.weight(1f))
+        if (valueLabel != null) {
+            Text(
+                valueLabel,
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.primary,
+                textAlign = TextAlign.End,
+                maxLines = 1,
+                modifier = Modifier.widthIn(min = 48.dp)
+            )
         }
-        Slider(value = value, onValueChange = onChange, valueRange = range)
     }
 }
 
