@@ -9,6 +9,14 @@ and versions follow [Semantic Versioning](https://semver.org/). Full notes for e
 
 ## [Unreleased]
 
+### Added
+- **Tool hints**: turning a tool on says in a line how to use it, under its chip. The hint goes at
+  the first press of the pen, or with a tap. Tool hints in Settings turns them off.
+
+### Changed
+- The path and selection cards come up once they have commands to offer, from a path's second
+  point and once a selection is made. How to start is the tool hint's to say.
+
 ## [0.22.0] - 2026-11-24
 
 ### Added

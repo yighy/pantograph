@@ -24,7 +24,11 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.launchIn
@@ -466,6 +470,7 @@ class DrawingViewModel(
         // corner. A tap is a touch too short to see, not a request to latch the pen; taken as
         // one, it lifted the pen out from under the held button and ended the shape.
         if (buttonHeld || session.value.isAnchorArmed) return
+        _penPresses.tryEmit(Unit)
         // In the path tool the pen is a hold, so there is no latched state to invert. The
         // canvas tap has no press and release of its own to offer, so it alternates instead:
         // hold the button for a placement you can adjust, tap the canvas for a quick one.
@@ -1150,6 +1155,14 @@ class DrawingViewModel(
     /** The floating button is held down. Between [pressPen] and [releasePen]. */
     private var buttonHeld = false
 
+    private val _penPresses = MutableSharedFlow<Unit>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
+    /**
+     * Every press of the pen, from the button or a tap on the canvas, whatever the tool makes of
+     * it. Not every press shows in the state - a fill or a wand pick is over before the pen
+     * would have gone down - so this is what tells a tool's hint that it is being used.
+     */
+    val penPresses: SharedFlow<Unit> = _penPresses.asSharedFlow()
+
     /** Distance drawn across the whole hold - see getCurrentStrokeDistance. */
     private var anchorHoldDistance = 0f
 
@@ -1178,6 +1191,7 @@ class DrawingViewModel(
     /** The floating button went down. */
     fun pressPen() {
         buttonHeld = true
+        _penPresses.tryEmit(Unit)
         if (anchorApplies(session.value)) {
             // The anchor exists from the press, where the cursor is, rather than from the first
             // line: the finger on the button can steer it before anything is drawn, and there

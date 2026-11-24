@@ -61,6 +61,8 @@ fun DrawingToolbar(
     val isSelectionMode = drawingMode.isSelectionTool()
     val isPathMode = drawingMode is DrawingMode.Path
     val isSelectionClosed by remember(viewModel) { viewModel.uiState.map { it.isSelectionClosed }.distinctUntilChanged() }.collectAsState(false)
+    val hasFloating by remember(viewModel) { viewModel.uiState.map { it.floatingBitmap != null }.distinctUntilChanged() }.collectAsState(false)
+    val pathPoints by remember(viewModel) { viewModel.uiState.map { it.pathPoints.size }.distinctUntilChanged() }.collectAsState(0)
 
     // Arming a tool that brings its own panel lets go of whichever of the three buttons was
     // pressed, so the tool's commands are what shows. This one stays state-driven because it
@@ -76,9 +78,13 @@ fun DrawingToolbar(
     // be changed mid-selection; letting the button go brings the tool's panel back, since the
     // tool is still armed. Only the command panels count for a tool: its values travel on its
     // chip, which is already the control.
+    //
+    // Only once there are commands, too: two points for a path, a selection made. Before that
+    // the card held nothing but how to start, which the tool hint under the chips says now -
+    // and says for every tool, not just these two.
     val toolCard = when {
-        isPathMode -> ToolbarCard.Path
-        isSelectionMode || isSelectionClosed -> ToolbarCard.Selection
+        isPathMode && pathPoints >= 2 -> ToolbarCard.Path
+        isSelectionClosed || hasFloating -> ToolbarCard.Selection
         else -> null
     }
     val card = when {

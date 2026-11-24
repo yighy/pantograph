@@ -69,6 +69,7 @@ class PreferenceManager(private val context: Context) {
         val LATEST_RELEASE_KEY = stringPreferencesKey("latest_release")
         val DISMISSED_RELEASE_KEY = stringPreferencesKey("dismissed_release")
         val EXPERIMENTAL_FEATURES_KEY = booleanPreferencesKey("experimental_features")
+        val TOOL_HINTS_KEY = booleanPreferencesKey("tool_hints")
     }
 
     // Every flow below ends in distinctUntilChanged, and it is load-bearing rather than tidy.
@@ -428,6 +429,17 @@ class PreferenceManager(private val context: Context) {
     suspend fun setSatelliteGateSensitivity(sensitivity: Float) {
         context.dataStore.edit { preferences ->
             preferences[SATELLITE_GATE_SENSITIVITY_KEY] = sensitivity
+        }
+    }
+
+    /** A line on how to use a tool, shown as it is turned on. On until switched off. */
+    val toolHints: Flow<Boolean> = context.dataStore.data.map { preferences ->
+        preferences[TOOL_HINTS_KEY] ?: true
+    }.distinctUntilChanged()
+
+    suspend fun setToolHints(enabled: Boolean) {
+        context.dataStore.edit { preferences ->
+            preferences[TOOL_HINTS_KEY] = enabled
         }
     }
 

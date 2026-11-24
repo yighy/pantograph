@@ -70,6 +70,7 @@ fun DrawingScreen(
 ) {
     val fabPos by preferenceManager.fabPosition.collectAsState(initial = 40f to 300f)
     val fabSizeSetting by preferenceManager.fabSize.collectAsState(initial = 56f)
+    val toolHints by preferenceManager.toolHints.collectAsState(initial = true)
     val context = LocalContext.current
     
     var showBrushStudio by remember { mutableStateOf(false) }
@@ -202,6 +203,7 @@ fun DrawingScreen(
                 LayersAndActionsSection(
                     viewModel = viewModel,
                     isFullscreen = isFullscreen,
+                    showToolHints = toolHints,
                     showLayersPanel = showLayersPanel,
                     onToggleLayers = { showLayersPanel = !showLayersPanel },
                     onNavigateToSettings = onNavigateToSettings,

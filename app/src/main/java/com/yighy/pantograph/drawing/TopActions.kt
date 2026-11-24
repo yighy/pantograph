@@ -45,6 +45,8 @@ fun LayersAndActionsSection(
     viewModel: DrawingViewModel,
     /** Strips this section back to the chips, which carry the only way out of fullscreen. */
     isFullscreen: Boolean = false,
+    /** The Tool hints setting: a line on how to use a tool, under its chip as it comes on. */
+    showToolHints: Boolean = true,
     showLayersPanel: Boolean,
     onToggleLayers: () -> Unit,
     onNavigateToSettings: () -> Unit,
@@ -294,6 +296,9 @@ fun LayersAndActionsSection(
                 }
             }
         }
+
+        // Under the chips, since it is about the one that just appeared.
+        ToolHint(viewModel, enabled = showToolHints)
 
         if (showAboutDialog) {
             AboutDialog(onDismiss = { showAboutDialog = false })

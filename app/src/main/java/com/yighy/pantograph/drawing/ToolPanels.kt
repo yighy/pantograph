@@ -15,7 +15,8 @@ import kotlinx.coroutines.flow.map
 
 /**
  * The path tool's own controls, modelled on [SelectionPanel]: an editing session gets the
- * toolbar for as long as it lasts.
+ * toolbar from its second point for as long as it lasts. How to place the first ones is the
+ * tool hint's to say.
  */
 @Composable
 fun PathPanel(viewModel: DrawingViewModel) {
@@ -23,61 +24,53 @@ fun PathPanel(viewModel: DrawingViewModel) {
     val closed by remember(viewModel) { viewModel.uiState.map { it.pathClosed }.distinctUntilChanged() }.collectAsState(false)
     val pointIsCorner by remember(viewModel) { viewModel.uiState.map { it.pathPointUnderCursorIsCorner }.distinctUntilChanged() }.collectAsState(null)
 
-    Column(modifier = Modifier.animateContentSize(animationSpec = MotionTokens.panelTransition)) {
-        if (points < 2) {
-            // The gesture is new to this app, so it is spelled out rather than left to be
-            // discovered by pressing the one button and seeing what happens.
-            Text(
-                "Hold the button to drop a point, steer, then release. Hold an existing point to move it",
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                modifier = Modifier.padding(vertical = 4.dp)
-            )
-        } else {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Button(
-                        onClick = { viewModel.commitPath() },
-                        modifier = Modifier.weight(1f).height(48.dp),
-                        shape = MaterialTheme.shapes.medium
-                    ) {
-                        Icon(Icons.Rounded.Check, null, modifier = Modifier.size(16.dp))
-                        Spacer(Modifier.width(4.dp))
-                        Text("Draw", style = MaterialTheme.typography.labelSmall)
-                    }
-                    OutlinedButton(
-                        onClick = { viewModel.cancelPath() },
-                        modifier = Modifier.weight(1f).height(48.dp),
-                        shape = MaterialTheme.shapes.medium
-                    ) {
-                        Icon(Icons.Rounded.Close, null, modifier = Modifier.size(16.dp))
-                        Spacer(Modifier.width(4.dp))
-                        Text("Discard", style = MaterialTheme.typography.labelSmall)
-                    }
-                }
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    // Enabled rather than hidden: a control that comes and goes as the cursor
-                    // drifts over a point would be harder to aim at than one that greys out.
-                    OutlinedButton(
-                        onClick = { viewModel.togglePathPointCorner() },
-                        enabled = pointIsCorner != null,
-                        modifier = Modifier.weight(1f).height(48.dp),
-                        shape = MaterialTheme.shapes.medium
-                    ) {
-                        Text(
-                            if (pointIsCorner == true) "Round point" else "Sharp point",
-                            style = MaterialTheme.typography.labelSmall
-                        )
-                    }
-                    OutlinedButton(
-                        onClick = { viewModel.togglePathClosed() },
-                        enabled = points >= 3,
-                        modifier = Modifier.weight(1f).height(48.dp),
-                        shape = MaterialTheme.shapes.medium
-                    ) {
-                        Text(if (closed) "Open" else "Close", style = MaterialTheme.typography.labelSmall)
-                    }
-                }
+    // No layout for fewer than two points: the card is not up then. It still draws this while
+    // it goes away - after Draw or Discard the points are already gone - so the buttons stay,
+    // greyed out, rather than the card emptying as it leaves.
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Button(
+                onClick = { viewModel.commitPath() },
+                enabled = points >= 2,
+                modifier = Modifier.weight(1f).height(48.dp),
+                shape = MaterialTheme.shapes.medium
+            ) {
+                Icon(Icons.Rounded.Check, null, modifier = Modifier.size(16.dp))
+                Spacer(Modifier.width(4.dp))
+                Text("Draw", style = MaterialTheme.typography.labelSmall)
+            }
+            OutlinedButton(
+                onClick = { viewModel.cancelPath() },
+                enabled = points >= 1,
+                modifier = Modifier.weight(1f).height(48.dp),
+                shape = MaterialTheme.shapes.medium
+            ) {
+                Icon(Icons.Rounded.Close, null, modifier = Modifier.size(16.dp))
+                Spacer(Modifier.width(4.dp))
+                Text("Discard", style = MaterialTheme.typography.labelSmall)
+            }
+        }
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            // Enabled rather than hidden: a control that comes and goes as the cursor
+            // drifts over a point would be harder to aim at than one that greys out.
+            OutlinedButton(
+                onClick = { viewModel.togglePathPointCorner() },
+                enabled = pointIsCorner != null,
+                modifier = Modifier.weight(1f).height(48.dp),
+                shape = MaterialTheme.shapes.medium
+            ) {
+                Text(
+                    if (pointIsCorner == true) "Round point" else "Sharp point",
+                    style = MaterialTheme.typography.labelSmall
+                )
+            }
+            OutlinedButton(
+                onClick = { viewModel.togglePathClosed() },
+                enabled = points >= 3,
+                modifier = Modifier.weight(1f).height(48.dp),
+                shape = MaterialTheme.shapes.medium
+            ) {
+                Text(if (closed) "Open" else "Close", style = MaterialTheme.typography.labelSmall)
             }
         }
     }
@@ -126,7 +119,9 @@ fun SelectionPanel(viewModel: DrawingViewModel) {
                     )
                 }
             }
-            isSelectionClosed -> {
+            // Also what it shows while it goes away after Deselect. The card is only up with a
+            // selection made; how to make one is the tool hint's to say.
+            else -> {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         if (isSelectionToolActive) {
@@ -171,7 +166,7 @@ fun SelectionPanel(viewModel: DrawingViewModel) {
                             Text("Deselect", style = MaterialTheme.typography.labelSmall)
                         }
                     }
-                    if (!isSelectionToolActive) {
+                    if (!isSelectionToolActive && isSelectionClosed) {
                         Text(
                             "Selection active - strokes only affect the selected area",
                             style = MaterialTheme.typography.labelSmall,
@@ -179,14 +174,6 @@ fun SelectionPanel(viewModel: DrawingViewModel) {
                         )
                     }
                 }
-            }
-            else -> {
-                Text(
-                    "Hold the pen and move the cursor to outline an area, then release",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                    modifier = Modifier.padding(vertical = 4.dp)
-                )
             }
         }
     }

@@ -52,6 +52,7 @@ fun SettingsScreen(
     val offscreenCursorArrow by preferenceManager.offscreenCursorArrow.collectAsState(initial = false)
     val undoRestoresCursor by preferenceManager.undoRestoresCursor.collectAsState(initial = true)
     val keepUndoneStrokes by preferenceManager.keepUndoneStrokes.collectAsState(initial = false)
+    val toolHints by preferenceManager.toolHints.collectAsState(initial = true)
     val satelliteGateSensitivity by preferenceManager.satelliteGateSensitivity.collectAsState(initial = 1f)
     val checkForUpdates by preferenceManager.checkForUpdates.collectAsState(initial = false)
     val experimentalFeatures by preferenceManager.experimentalFeatures.collectAsState(initial = false)
@@ -152,6 +153,12 @@ fun SettingsScreen(
                     subtitle = "Leaves them faintly, to redraw over",
                     checked = keepUndoneStrokes
                 ) { scope.launch { preferenceManager.setKeepUndoneStrokes(it) } }
+                CardDivider()
+                SwitchRow(
+                    "Tool hints",
+                    subtitle = "How to use a tool, as you turn it on",
+                    checked = toolHints
+                ) { scope.launch { preferenceManager.setToolHints(it) } }
             }
 
             SectionHeader("Floating button")
