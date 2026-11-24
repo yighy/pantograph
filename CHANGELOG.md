@@ -9,6 +9,10 @@ and versions follow [Semantic Versioning](https://semver.org/). Full notes for e
 
 ## [Unreleased]
 
+### Fixed
+- With Fill on, dragging the button straight after pressing it could leave the fill behind on a
+  large canvas, where it is meant to be taken back.
+
 ## [0.23.0] - 2026-11-24
 
 ### Added

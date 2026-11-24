@@ -674,7 +674,19 @@ class DrawingViewModel(
         canvas.drawBitmap(stroke, 0f, 0f, paint)
     }
 
+    /** A fill that can still be called off before it lands. See [pendingFill]. */
+    private class PendingFill { var cancelled = false }
+
+    /**
+     * The fill a press started, while it is being worked out. On a large canvas that takes
+     * long enough for the button to be dragged away first, which takes the press back - and
+     * the fill must then not land on the layer that was just restored.
+     */
+    private var pendingFill: PendingFill? = null
+
     private fun performFloodFill(pos: Offset, color: Color) {
+        val ticket = PendingFill()
+        pendingFill = ticket
         viewModelScope.launch(Dispatchers.Default) {
             val state = session.value
             val activeId = state.activeLayerId
@@ -711,9 +723,13 @@ class DrawingViewModel(
                     pixels[i] = if (a == 0) before[i] else (a shl 24) or (pixels[i] and 0xFFFFFF)
                 }
             }
-            bitmap.setPixels(pixels, 0, width, 0, 0, width, height)
+            synchronized(ticket) {
+                if (ticket.cancelled) return@launch
+                bitmap.setPixels(pixels, 0, width, 0, 0, width, height)
+            }
 
             withContext(Dispatchers.Main) {
+                if (pendingFill === ticket) pendingFill = null
                 session.bumpRender()
                 timelapse.onStroke()
                 persistence.scheduleLayerSave(activeId)
@@ -817,6 +833,10 @@ class DrawingViewModel(
     fun abortCurrentStroke() {
         if (!pressPushedEntry) return
         pressPushedEntry = false
+        // A fill still being worked out would land after the layer is put back, and stay.
+        // Called off first, so it either never lands or has landed already and is restored.
+        pendingFill?.let { synchronized(it) { it.cancelled = true } }
+        pendingFill = null
         history.abortLastEntry()
     }
 
