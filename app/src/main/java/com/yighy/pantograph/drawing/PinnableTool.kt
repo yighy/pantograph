@@ -3,19 +3,13 @@ package com.yighy.pantograph.drawing
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AutoFixHigh
 import androidx.compose.material.icons.rounded.FormatColorFill
-import androidx.compose.material.icons.rounded.FormatPaint
 import androidx.compose.material.icons.rounded.Gradient
 import androidx.compose.material.icons.rounded.HighlightAlt
 import androidx.compose.material.icons.rounded.Palette
 import androidx.compose.material.icons.rounded.Polyline
-import androidx.compose.material.icons.rounded.Timeline
-import androidx.compose.material.icons.rounded.Cable
 import androidx.compose.material.icons.rounded.Fullscreen
 import androidx.compose.material.icons.rounded.Anchor
-import androidx.compose.material.icons.rounded.Link
 import androidx.compose.material.icons.rounded.Replay
-import androidx.compose.material.icons.rounded.ZoomIn
-import androidx.compose.material.icons.rounded.CenterFocusStrong
 import androidx.compose.ui.graphics.vector.ImageVector
 
 /**
@@ -34,15 +28,15 @@ enum class PinnableTool(
     Fill("Fill", Icons.Rounded.FormatColorFill),
     Gradient("Gradient", Icons.Rounded.Gradient),
     /** Traced to fill: a flat shape in one gesture, where the bucket needs an outline first. */
-    LassoFill("Lasso fill", Icons.Rounded.FormatPaint),
-    Lazy("Lazy", Icons.Rounded.Cable),
+    LassoFill("Lasso fill", LassoFillIcon),
+    Lazy("Lazy", LazyIcon),
     /**
      * Every line of a hold starts from one point, which the finger on the button moves. The
      * button never has to be let go between lines.
      */
     Anchor("Anchor", Icons.Rounded.Anchor),
     /** Straight lines chained end to end while the button is held: a polyline in one hold. */
-    Chain("Chain", Icons.Rounded.Link),
+    Chain("Chain", ChainIcon),
     /**
      * Puts the raised cursor on Draw Sensitivity too, so the scale never changes under the
      * finger at pen-down.
@@ -51,9 +45,9 @@ enum class PinnableTool(
      * crossing the canvas at 0.2x is a lot of wiping, and that is a price worth paying for the
      * detail work and not for getting to it.
      */
-    Fine("Fine", Icons.Rounded.CenterFocusStrong),
+    Fine("Fine", FineIcon),
     /** Opens the magnified window. Its zoom is on its chip, like every tool's values. */
-    Loupe("Loupe", Icons.Rounded.ZoomIn),
+    Loupe("Loupe", LoupeIcon),
     /**
      * Pinnable like the rest, which is what gives it a way *out*: the readout row draws every
      * armed tool with a cross on it, and that cross is the only control left on screen.
@@ -70,7 +64,7 @@ enum class PinnableTool(
      * qualifies anyway - the satellite tap arms and disarms it like any other mode, and
      * disarming throws the pending curve away, which is what leaving a tool should do.
      */
-    Path("Path", Icons.Rounded.Timeline);
+    Path("Path", PathIcon);
 
     /**
      * The values this tool carries, adjusted by dragging on its chip - the only place they

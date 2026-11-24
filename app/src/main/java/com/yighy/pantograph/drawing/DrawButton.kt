@@ -191,11 +191,11 @@ internal fun DrawButton(
             drawingMode is DrawingMode.Gradient ->
                 Triple(Icons.Rounded.Gradient, "Gradient active", MaterialTheme.colorScheme.primaryContainer)
             drawingMode is DrawingMode.LassoFill ->
-                Triple(Icons.Rounded.FormatPaint, "Lasso fill active", MaterialTheme.colorScheme.primaryContainer)
+                Triple(LassoFillIcon, "Lasso fill active", MaterialTheme.colorScheme.primaryContainer)
             drawingMode is DrawingMode.LassoErase ->
                 Triple(EraserIcon, "Lasso erase active", MaterialTheme.colorScheme.primaryContainer)
             drawingMode is DrawingMode.PolygonFill ->
-                Triple(Icons.Rounded.FormatPaint, "Polygon fill active", MaterialTheme.colorScheme.primaryContainer)
+                Triple(LassoFillIcon, "Polygon fill active", MaterialTheme.colorScheme.primaryContainer)
             drawingMode is DrawingMode.PolygonErase ->
                 Triple(EraserIcon, "Polygon erase active", MaterialTheme.colorScheme.primaryContainer)
             drawingMode is DrawingMode.SelectLasso ->
@@ -207,7 +207,7 @@ internal fun DrawButton(
             drawingMode is DrawingMode.SelectColor ->
                 Triple(Icons.Rounded.Palette, "Colour select active", MaterialTheme.colorScheme.primaryContainer)
             drawingMode is DrawingMode.Path ->
-                Triple(Icons.Rounded.Timeline, "Path tool active", MaterialTheme.colorScheme.primaryContainer)
+                Triple(PathIcon, "Path tool active", MaterialTheme.colorScheme.primaryContainer)
             else -> null
         }
         // Pressed always reads the same whatever tool is armed, so the identity lives in
@@ -224,7 +224,7 @@ internal fun DrawButton(
         // rather than down, so the pen glyph does not flick back to the hand mid-stroke.
         val fabIcon = armed?.first ?: when {
             anchorApplies -> Icons.Rounded.Anchor
-            chainApplies -> Icons.Rounded.Link
+            chainApplies -> ChainIcon
             isPenEngaged -> Icons.Default.Edit
             else -> Icons.Default.TouchApp
         }
