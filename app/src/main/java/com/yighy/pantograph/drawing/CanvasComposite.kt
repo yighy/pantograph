@@ -2,7 +2,6 @@ package com.yighy.pantograph.drawing
 
 import android.graphics.Bitmap
 import android.graphics.Canvas
-import android.graphics.Paint
 import kotlin.math.max
 import kotlin.math.min
 
@@ -36,13 +35,7 @@ object CanvasComposite {
         // Reference layers are working aids, not artwork: they are on the canvas to be traced
         // over, and have no business in the picture of the project.
         state.layers.filter { it.isVisible && !it.isTrace }.forEach { layer ->
-            layerBitmaps[layer.id]?.let {
-                val paint = Paint().apply {
-                    alpha = (layer.opacity * 255).toInt()
-                    isFilterBitmap = true
-                }
-                canvas.drawBitmap(it, 0f, 0f, paint)
-            }
+            layerBitmaps[layer.id]?.let { canvas.drawBitmap(it, 0f, 0f, layer.compositePaint()) }
         }
         return out
     }

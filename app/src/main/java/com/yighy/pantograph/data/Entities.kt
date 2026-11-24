@@ -84,7 +84,19 @@ data class LayerEntity(
      * change what is drawn on it, which is the thing you cannot get back by flipping the flag
      * again.
      */
-    val isLocked: Boolean = false
+    val isLocked: Boolean = false,
+    /**
+     * How the layer mixes with what is under it, as a LayerBlend name. Stored by name so a
+     * blend this build does not know, written by a newer one, reads as Normal rather than
+     * failing.
+     */
+    @ColumnInfo(defaultValue = "Normal") val blendMode: String = "Normal",
+    /**
+     * Protects the layer's transparency: paint lands only where the layer already has some,
+     * in proportion to how much. For colouring inside a shape without going over its edge.
+     * Erasing still erases.
+     */
+    @ColumnInfo(defaultValue = "0") val isAlphaLocked: Boolean = false
 )
 
 @Entity(

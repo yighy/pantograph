@@ -661,6 +661,9 @@ class DrawingViewModel(
             alpha = (state.brushOpacity * 255).toInt()
             if (state.drawingMode.isEraser) {
                 xfermode = PorterDuffXfermode(PorterDuff.Mode.DST_OUT)
+            } else if (state.layers.find { it.id == state.activeLayerId }?.isAlphaLocked == true) {
+                // Only onto what is already there, in proportion to how much is.
+                xfermode = PorterDuffXfermode(PorterDuff.Mode.SRC_ATOP)
             }
         }
         canvas.drawBitmap(stroke, 0f, 0f, paint)
@@ -689,10 +692,20 @@ class DrawingViewModel(
                 IntArray(width * height).also { mask.getPixels(it, 0, width, 0, 0, width, height) }
             }
 
+            val alphaLocked = state.layers.find { it.id == activeId }?.isAlphaLocked == true
+            val before = if (alphaLocked) pixels.copyOf() else null
             FloodFill.fill(
                 pixels, width, height, x, y, targetColor, replacementColor,
                 state.fillTolerance, maskPixels, state.fillGrow.toInt()
             )
+            // The alpha lock keeps every pixel's own transparency: the fill recolours the paint
+            // that is there and leaves the empty parts empty.
+            if (before != null) {
+                for (i in pixels.indices) {
+                    val a = before[i] ushr 24
+                    pixels[i] = if (a == 0) before[i] else (a shl 24) or (pixels[i] and 0xFFFFFF)
+                }
+            }
             bitmap.setPixels(pixels, 0, width, 0, 0, width, height)
 
             withContext(Dispatchers.Main) {
@@ -871,6 +884,8 @@ class DrawingViewModel(
     }
     fun renameLayer(layer: LayerEntity, newName: String) = layers.rename(layer, newName)
     fun setLayerOpacity(layer: LayerEntity, opacity: Float) = layers.setOpacity(layer, opacity)
+    fun toggleLayerAlphaLock(layer: LayerEntity) = layers.toggleAlphaLock(layer)
+    fun setLayerBlend(layer: LayerEntity, blend: LayerBlend) = layers.setBlend(layer, blend)
     fun persistLayerOpacity(layerId: Long) = layers.persistOpacity(layerId)
     fun duplicateLayer(layer: LayerEntity) = layers.duplicate(layer)
     fun mergeDown(layer: LayerEntity) = layers.mergeDown(layer)

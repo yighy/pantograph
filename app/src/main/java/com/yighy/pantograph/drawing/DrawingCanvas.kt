@@ -283,14 +283,12 @@ fun CanvasLayer(viewModel: DrawingViewModel, crisp: Boolean = false) {
                 drawIntoCanvas { canvas ->
                     val native = canvas.nativeCanvas
                     val rect = android.graphics.RectF(0f, 0f, size.width, size.height)
-                    val saveCount = native.saveLayer(rect, null)
+                    // The layer's opacity and blend on the whole, after the erasing.
+                    val saveCount = native.saveLayer(rect, layer.compositePaint(smooth))
                     
                     // Draw layer content
                     layerBitmaps[layer.id]?.let { bitmap ->
-                        val p = android.graphics.Paint().apply {
-                            alpha = (layer.opacity * 255).toInt()
-                            isFilterBitmap = smooth
-                        }
+                        val p = android.graphics.Paint().apply { isFilterBitmap = smooth }
                         native.drawBitmap(bitmap, null, rect, p)
                     }
                     
@@ -318,6 +316,7 @@ fun CanvasLayer(viewModel: DrawingViewModel, crisp: Boolean = false) {
 
                 if (sb != null && liveStroke &&
                     layer.opacity >= 1f && brushOpacity >= 1f &&
+                    layer.blend == LayerBlend.Normal && !layer.isAlphaLocked &&
                     brushTextureMask == null && selectionMask == null
                 ) {
                     // Fast path for the common case (everything fully opaque, no masks):
@@ -340,14 +339,14 @@ fun CanvasLayer(viewModel: DrawingViewModel, crisp: Boolean = false) {
                     drawIntoCanvas { canvas ->
                         val native = canvas.nativeCanvas
                         val rect = android.graphics.RectF(0f, 0f, size.width, size.height)
-                        val outer = native.saveLayer(rect, android.graphics.Paint().apply {
-                            alpha = (layer.opacity * 255).toInt()
-                        })
+                        val outer = native.saveLayer(rect, layer.compositePaint(smooth))
                         val bitmapPaint = android.graphics.Paint().apply { isFilterBitmap = smooth }
                         layerBitmaps[layer.id]?.let { native.drawBitmap(it, null, rect, bitmapPaint) }
 
                         val inner = native.saveLayer(rect, android.graphics.Paint().apply {
                             alpha = (brushOpacity * 255).toInt()
+                            // Onto the layer's own paint only, as the commit lays it.
+                            if (layer.isAlphaLocked) xfermode = PorterDuffXfermode(PorterDuff.Mode.SRC_ATOP)
                         })
                         native.drawBitmap(sb, null, rect, bitmapPaint)
                         brushTextureMask?.let { mask ->
@@ -371,10 +370,7 @@ fun CanvasLayer(viewModel: DrawingViewModel, crisp: Boolean = false) {
                             canvas.nativeCanvas.drawBitmap(
                                 bitmap, null,
                                 android.graphics.RectF(0f, 0f, size.width, size.height),
-                                android.graphics.Paint().apply {
-                                    alpha = (layer.opacity * 255).toInt()
-                                    isFilterBitmap = smooth
-                                }
+                                layer.compositePaint(smooth)
                             )
                         }
                     }

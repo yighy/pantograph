@@ -4,11 +4,13 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 import com.yighy.pantograph.BuildConfig
 
 @Database(
     entities = [ProjectEntity::class, LayerEntity::class, StrokeEntity::class, CustomBrushEntity::class, BrushFolderEntity::class],
-    version = 24,
+    version = 25,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -18,11 +20,19 @@ abstract class AppDatabase : RoomDatabase() {
         @Volatile
         private var INSTANCE: AppDatabase? = null
 
-        // No migrations are carried while the app is pre-1.0. A schema change bumps the
-        // version and the database is thrown away and rebuilt, which is the trade SchemaPolicy
-        // already describes: nobody's work is in that file yet, and a migration per experiment
-        // costs more than it protects. Once 1.0 ships the fallback disappears on its own and
-        // the first real Migration will start from whatever version ships with it.
+        // Pre-1.0, a schema change with no migration still throws the database away and
+        // rebuilds it, the trade SchemaPolicy describes. A change that is only new columns with
+        // defaults costs one statement each to carry over, though, and people's drawings are in
+        // that file now - so those get a real migration, and the fallback is left for the
+        // changes that cannot be expressed that cheaply.
+
+        /** A blend mode and an alpha lock for every layer, Normal and off for those already there. */
+        private val MIGRATION_24_25 = object : Migration(24, 25) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE layers ADD COLUMN blendMode TEXT NOT NULL DEFAULT 'Normal'")
+                db.execSQL("ALTER TABLE layers ADD COLUMN isAlphaLocked INTEGER NOT NULL DEFAULT 0")
+            }
+        }
 
         fun getDatabase(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
@@ -30,7 +40,7 @@ abstract class AppDatabase : RoomDatabase() {
                     context.applicationContext,
                     AppDatabase::class.java,
                     "drawing_database"
-                )
+                ).addMigrations(MIGRATION_24_25)
 
                 if (SchemaPolicy.allowsDestructiveFallback(BuildConfig.VERSION_NAME)) {
                     builder.fallbackToDestructiveMigration(dropAllTables = true)

@@ -245,10 +245,7 @@ class ProjectPersistence(
 
             // As with the thumbnail: a reference layer never leaves the app.
             state.layers.filter { it.isVisible && !it.isTrace }.forEach { layer ->
-                session.layerBitmaps[layer.id]?.let {
-                    val paint = Paint().apply { alpha = (layer.opacity * 255).toInt() }
-                    canvas.drawBitmap(it, 0f, 0f, paint)
-                }
+                session.layerBitmaps[layer.id]?.let { canvas.drawBitmap(it, 0f, 0f, layer.compositePaint()) }
             }
 
             val fileName = "Export_${state.projectName}_${System.currentTimeMillis()}.$format"

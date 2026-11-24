@@ -155,6 +155,24 @@ class LayerController(
         }
     }
 
+    /** Metadata only, like the lock: no pixels change, so it stays available on a locked layer. */
+    fun toggleAlphaLock(layer: LayerEntity) {
+        history.save(emptyMap())
+        scope.launch {
+            repository.updateLayer(layer.copy(isAlphaLocked = !layer.isAlphaLocked))
+            persistence.touchProject()
+        }
+    }
+
+    fun setBlend(layer: LayerEntity, blend: LayerBlend) {
+        if (layer.blend == blend) return
+        history.save(emptyMap()) // how the layer is drawn, not what is on it
+        scope.launch {
+            repository.updateLayer(layer.copy(blendMode = blend.name))
+            persistence.touchProject()
+        }
+    }
+
     fun toggleVisibility(layer: LayerEntity) {
         history.save(emptyMap()) // only flips a metadata flag, no bitmap pixels change
         scope.launch {
@@ -195,7 +213,10 @@ class LayerController(
         scope.launch {
             val zIndex = (session.value.layers.maxOfOrNull { it.zIndex } ?: 0) + 1
             val newLayerId = repository.insertLayer(
-                LayerEntity(projectId = projectId, name = "${layer.name} Copy", zIndex = zIndex, opacity = layer.opacity)
+                LayerEntity(
+                    projectId = projectId, name = "${layer.name} Copy", zIndex = zIndex, opacity = layer.opacity,
+                    blendMode = layer.blendMode, isAlphaLocked = layer.isAlphaLocked
+                )
             )
             val originalBitmap = session.layerBitmaps[layer.id]
             if (originalBitmap != null) {
@@ -222,8 +243,9 @@ class LayerController(
             val sourceBitmap = session.layerBitmaps[layer.id] ?: return@launch
             val targetBitmap = session.layerBitmaps[targetLayer.id] ?: return@launch
             val canvas = Canvas(targetBitmap)
-            val paint = Paint().apply { alpha = (layer.opacity * 255).toInt() }
-            canvas.drawBitmap(sourceBitmap, 0f, 0f, paint)
+            // With its blend, so what was on screen is what the merged layer holds - exactly so
+            // over an opaque layer below, as close as one layer can get over a transparent one.
+            canvas.drawBitmap(sourceBitmap, 0f, 0f, layer.compositePaint())
             repository.deleteLayer(layer)
             session.layerBitmaps.remove(layer.id)
             persistence.deleteLayerFile(layer.id)

@@ -37,4 +37,11 @@ class DrawingModeToggleTest {
         assertEquals(DrawingMode.Eraser, DrawingMode.BucketFill.withEraser(true))
         assertEquals(DrawingMode.StraightLine, DrawingMode.Gradient.withLine(true))
     }
+
+    @Test
+    fun unknownBlendNamesReadAsNormal() {
+        assertEquals(LayerBlend.Multiply, LayerBlend.of("Multiply"))
+        assertEquals(LayerBlend.Normal, LayerBlend.of("ColorDodge"))
+        assertEquals(LayerBlend.Normal, LayerBlend.of(null))
+    }
 }
