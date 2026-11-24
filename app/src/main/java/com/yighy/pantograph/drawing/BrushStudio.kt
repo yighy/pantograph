@@ -21,6 +21,7 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
@@ -41,6 +42,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
@@ -94,6 +96,7 @@ fun AdvancedBrushStudio(uiState: DrawingState, viewModel: DrawingViewModel, onDi
     val hasUnsavedChanges = selectedBrush != null && !uiState.toBrushConfig().paintsSameAs(selectedBrush)
 
     var showDiscardDialog by remember { mutableStateOf(false) }
+    var tab by rememberSaveable { mutableStateOf(StudioTab.Tip) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val scope = rememberCoroutineScope()
 
@@ -327,206 +330,231 @@ fun AdvancedBrushStudio(uiState: DrawingState, viewModel: DrawingViewModel, onDi
                             }
                         }
                     }
-                }
-            }
 
-            // Tip: what one stamp looks like before it is laid down anywhere.
-            item {
-                StudioSection(title = "Tip", icon = Icons.Rounded.Brush) {
-                    DrawingSettingRow("Size", "${uiState.selectedWidth.toInt()}px", uiState.selectedWidth, { viewModel.selectWidth(it) }, 1f..300f)
-                    // Sits directly under Size because it scales it: the readout shows the
-                    // multiplier, and the size row above still shows the size being multiplied.
-                    // The slider runs on track position rather than the multiplier itself -
-                    // see SizeMultiplierScale for the curve and the detent at 1.00x.
-                    DrawingSettingRow(
-                        label = "Size Multiplier",
-                        valueLabel = String.format(java.util.Locale.US, "%.2fx", uiState.sizeMultiplier),
-                        value = SizeMultiplierScale.toPosition(uiState.sizeMultiplier),
-                        onValueChange = { position ->
-                            val next = SizeMultiplierScale.toMultiplier(position)
-                            // Tick on the way into the detent only, so it reads as landing on
-                            // 1.00x rather than buzzing for every frame the thumb sits there.
-                            if (next == SizeMultiplierScale.NEUTRAL && uiState.sizeMultiplier != next) {
-                                haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    // One section at a time, picked here rather than scrolled to: what sits
+                    // under the preview is only ever the settings asked for, and each section
+                    // fits without a scroll of its own. In the pinned header, so the tabs stay
+                    // in reach as well as the preview.
+                    Box(modifier = Modifier.padding(top = 12.dp)) {
+                        val tabScroll = rememberScrollState()
+                        Row(
+                            modifier = Modifier.horizontalScroll(tabScroll),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            StudioTab.entries.forEach { t ->
+                                FilterChip(
+                                    selected = tab == t,
+                                    onClick = { tab = t },
+                                    label = { Text(t.label) },
+                                    leadingIcon = { Icon(t.icon, contentDescription = null, modifier = Modifier.size(18.dp)) }
+                                )
                             }
-                            viewModel.setSizeMultiplier(next)
-                        },
-                        range = 0f..1f
-                    )
-
-                    // Shape, ratio and anti-aliasing are all greyed out under a custom tip,
-                    // which brings its own outline and proportions: the built-in stamp is the
-                    // only thing they describe.
-                    val builtInTip = uiState.brushTipUri == null
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            "Shape",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = if (builtInTip) MaterialTheme.colorScheme.onSurface
-                                else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.38f),
-                            modifier = Modifier.weight(1f)
-                        )
-                        TipShape.entries.forEach { shape ->
-                            FilterChip(
-                                selected = uiState.tipShape == shape,
-                                enabled = builtInTip,
-                                onClick = { viewModel.setTipShape(shape) },
-                                label = { Text(shape.name, style = MaterialTheme.typography.labelSmall) }
-                            )
                         }
+                        ScrollHint(tabScroll.canScrollBackward, ScrollHintEdge.Start)
+                        ScrollHint(tabScroll.canScrollForward, ScrollHintEdge.End)
                     }
+                }
+            }
 
-                    // Animated height rather than AnimatedVisibility: this Column spaces its
-                    // children, and a collapsing AnimatedVisibility holds its gap open until
-                    // the exit ends. Same reasoning as the velocity block further down.
-                    Column(modifier = Modifier.animateContentSize(animationSpec = MotionTokens.panelTransition)) {
-                        if (builtInTip) {
-                            // Shown as the short axis over the long one, the way it is stored, so
-                            // the number on screen is the number a preset carries.
+            item {
+                AnimatedContent(
+                    targetState = tab,
+                    transitionSpec = {
+                        (fadeIn(MotionTokens.expressiveEnter) togetherWith fadeOut(MotionTokens.expressiveExit))
+                            .using(SizeTransform(clip = false) { _, _ -> MotionTokens.panelTransition })
+                    },
+                    label = "studioTab"
+                ) { shown ->
+                    when (shown) {
+                        // Tip: what one stamp looks like before it is laid down anywhere.
+                        StudioTab.Tip -> StudioCard {
+                            DrawingSettingRow("Size", "${uiState.selectedWidth.toInt()}px", uiState.selectedWidth, { viewModel.selectWidth(it) }, 1f..300f)
+                            // Sits directly under Size because it scales it: the readout shows the
+                            // multiplier, and the size row above still shows the size being multiplied.
+                            // The slider runs on track position rather than the multiplier itself -
+                            // see SizeMultiplierScale for the curve and the detent at 1.00x.
                             DrawingSettingRow(
-                                "Ratio",
-                                String.format("%.2f", uiState.tipRatio),
-                                uiState.tipRatio,
-                                { viewModel.setTipRatio(it) },
-                                0.05f..1f
+                                label = "Size multiplier",
+                                valueLabel = String.format(java.util.Locale.US, "%.2fx", uiState.sizeMultiplier),
+                                value = SizeMultiplierScale.toPosition(uiState.sizeMultiplier),
+                                onValueChange = { position ->
+                                    val next = SizeMultiplierScale.toMultiplier(position)
+                                    // Tick on the way into the detent only, so it reads as landing on
+                                    // 1.00x rather than buzzing for every frame the thumb sits there.
+                                    if (next == SizeMultiplierScale.NEUTRAL && uiState.sizeMultiplier != next) {
+                                        haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                    }
+                                    viewModel.setSizeMultiplier(next)
+                                },
+                                range = 0f..1f
+                            )
+
+                            // Shape, ratio and anti-aliasing are all greyed out under a custom tip,
+                            // which brings its own outline and proportions: the built-in stamp is the
+                            // only thing they describe.
+                            val builtInTip = uiState.brushTipUri == null
+                            Row(
+                                modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    "Shape",
+                                    style = StudioLabelStyle,
+                                    color = if (builtInTip) MaterialTheme.colorScheme.onSurface
+                                        else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.38f),
+                                    modifier = Modifier.width(StudioLabelWidth)
+                                )
+                                TipShape.entries.forEach { shape ->
+                                    FilterChip(
+                                        selected = uiState.tipShape == shape,
+                                        enabled = builtInTip,
+                                        onClick = { viewModel.setTipShape(shape) },
+                                        label = { Text(shape.name, style = MaterialTheme.typography.labelSmall) }
+                                    )
+                                }
+                            }
+
+                            // Animated height rather than AnimatedVisibility: this Column spaces its
+                            // children, and a collapsing AnimatedVisibility holds its gap open until
+                            // the exit ends. Same reasoning as the velocity block further down.
+                            Column(modifier = Modifier.animateContentSize(animationSpec = MotionTokens.panelTransition)) {
+                                if (builtInTip) {
+                                    // Shown as the short axis over the long one, the way it is stored, so
+                                    // the number on screen is the number a preset carries.
+                                    DrawingSettingRow(
+                                        "Ratio",
+                                        String.format("%.2f", uiState.tipRatio),
+                                        uiState.tipRatio,
+                                        { viewModel.setTipRatio(it) },
+                                        0.05f..1f
+                                    )
+                                }
+                            }
+
+                            DrawingSettingRow("Softness", "${(uiState.brushSoftness * 100).toInt()}%", uiState.brushSoftness, { viewModel.setBrushSoftness(it) }, 0f..1f)
+                            DrawingSettingRow("Rotation", "${uiState.brushRotation.toInt()}\u00B0", uiState.brushRotation, { viewModel.setBrushRotation(it) }, 0f..360f)
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    "Anti-aliasing",
+                                    style = StudioLabelStyle,
+                                    modifier = Modifier.weight(1f)
+                                )
+                                Switch(
+                                    checked = uiState.antiAlias,
+                                    enabled = builtInTip,
+                                    onCheckedChange = { viewModel.setAntiAlias(it) }
+                                )
+                            }
+                        }
+
+                        // Stroke: how those stamps are laid along the path.
+                        StudioTab.Stroke -> StudioCard {
+                            DrawingSettingRow("Spacing", "${(uiState.brushSpacing * 100).toInt()}%", uiState.brushSpacing, { viewModel.setBrushSpacing(it) }, 0.01f..4f)
+                            DrawingSettingRow("Flow", "${(uiState.brushFlow * 100).toInt()}%", uiState.brushFlow, { viewModel.setBrushFlow(it) }, 0f..1f)
+                            DrawingSettingRow("Opacity", "${(uiState.brushOpacity * 100).toInt()}%", uiState.brushOpacity, { viewModel.setBrushOpacity(it) }, 0f..1f)
+                            DrawingSettingRow("Follow direction", "${(uiState.rotationFollow * 100).toInt()}%", uiState.rotationFollow, { viewModel.setRotationFollow(it) }, 0f..1f)
+                            // Steadies the cursor rather than the stamp, which is why it alone leaves
+                            // the preview above unchanged - that draws a path it was given.
+                            DrawingSettingRow("Smoothing", "${(uiState.brushSmoothing * 100).toInt()}%", uiState.brushSmoothing, { viewModel.setBrushSmoothing(it) }, 0f..1f)
+                        }
+
+                        // Jitter: the same brush, varied per stamp. Shape first, then colour - they read
+                        // as two groups and were interleaved once already.
+                        StudioTab.Jitter -> StudioCard {
+                            DrawingSettingRow("Size", "${(uiState.sizeJitter * 100).toInt()}%", uiState.sizeJitter, { viewModel.setSizeJitter(it) }, 0f..1f)
+                            // Degrees, not a fraction like its neighbours: the value is added straight
+                            // to the stamp's angle. Sharing their 0..1 range would cap the whole control
+                            // at one degree.
+                            DrawingSettingRow("Rotation", "${uiState.brushRotationJitter.toInt()}°", uiState.brushRotationJitter, { viewModel.setRotationJitter(it) }, 0f..180f)
+                            DrawingSettingRow("Scatter", "${(uiState.scatterJitter * 100).toInt()}%", uiState.scatterJitter, { viewModel.setScatterJitter(it) }, 0f..1f)
+                            DrawingSettingRow("Flow", "${(uiState.flowJitter * 100).toInt()}%", uiState.flowJitter, { viewModel.setFlowJitter(it) }, 0f..1f)
+
+                            HorizontalDivider(thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+
+                            // Small values are the useful ones: hue spans the whole wheel at 100%.
+                            DrawingSettingRow("Hue", "${(uiState.hueJitter * 100).toInt()}%", uiState.hueJitter, { viewModel.setHueJitter(it) }, 0f..1f)
+                            DrawingSettingRow("Saturation", "${(uiState.saturationJitter * 100).toInt()}%", uiState.saturationJitter, { viewModel.setSaturationJitter(it) }, 0f..1f)
+                            DrawingSettingRow("Value", "${(uiState.valueJitter * 100).toInt()}%", uiState.valueJitter, { viewModel.setValueJitter(it) }, 0f..1f)
+                        }
+
+                        // Smudge: the one thing here that reads the canvas instead of painting onto it.
+                        StudioTab.Smudge -> StudioCard {
+                            DrawingSettingRow("Amount", "${(uiState.smudge * 100).toInt()}%", uiState.smudge, { viewModel.setSmudge(it) }, 0f..1f)
+                            Column(modifier = Modifier.animateContentSize(animationSpec = MotionTokens.panelTransition)) {
+                                if (uiState.smudge > 0f) {
+                                    DrawingSettingRow("Length", "${(uiState.smudgeLength * 100).toInt()}%", uiState.smudgeLength, { viewModel.setSmudgeLength(it) }, 0f..1f)
+                                }
+                            }
+                        }
+
+                        // Velocity: everything that answers to how fast the stroke is moving.
+                        StudioTab.Velocity -> StudioCard {
+                            // Laid out like the anti-aliasing switch: one label, centred on the switch.
+                            Row(
+                                modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    "Velocity dynamics",
+                                    style = StudioLabelStyle,
+                                    modifier = Modifier.weight(1f)
+                                )
+                                Switch(checked = uiState.velocityEnabled, onCheckedChange = { viewModel.setVelocityEnabled(it) })
+                            }
+
+                            // animateContentSize rather than AnimatedVisibility: this Column spaces its
+                            // children, and a collapsing AnimatedVisibility keeps its slot until
+                            // the exit finishes - so that gap would sit at full height the whole way down
+                            // and then vanish in a single frame. Animating this wrapper own height leaves
+                            // no phantom slot behind.
+                            Column(
+                                modifier = Modifier.animateContentSize(animationSpec = MotionTokens.panelTransition),
+                                verticalArrangement = Arrangement.spacedBy(StudioRowGap)
+                            ) {
+                                if (uiState.velocityEnabled) {
+                                    DrawingSettingRow("Size", "${if (uiState.velocitySizeAmount > 0) "+" else ""}${(uiState.velocitySizeAmount * 100).toInt()}%", uiState.velocitySizeAmount, { viewModel.setVelocitySize(it) }, -2f..2f)
+                                    DrawingSettingRow("Flow", "${if (uiState.velocityFlowAmount > 0) "+" else ""}${(uiState.velocityFlowAmount * 100).toInt()}%", uiState.velocityFlowAmount, { viewModel.setVelocityFlow(it) }, -2f..2f)
+                                    DrawingSettingRow("Scatter", "${if (uiState.velocityScatterAmount > 0) "+" else ""}${(uiState.velocityScatterAmount * 100).toInt()}%", uiState.velocityScatterAmount, { viewModel.setVelocityScatter(it) }, -2f..2f)
+                                }
+                            }
+                        }
+
+                        // Custom Assets
+                        StudioTab.Assets -> StudioCard {
+                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                                AssetPickerCard(
+                                    label = "Brush Tip",
+                                    icon = Icons.Rounded.FilterTiltShift,
+                                    bitmap = uiState.brushTipBitmap,
+                                    onPick = { tipPicker.launch(arrayOf("image/*")) },
+                                    onClear = { viewModel.setBrushTip(context, null) },
+                                    modifier = Modifier.weight(1f)
+                                )
+                                AssetPickerCard(
+                                    label = "Texture",
+                                    icon = Icons.Rounded.Texture,
+                                    bitmap = uiState.brushTextureBitmap,
+                                    onPick = { texturePicker.launch(arrayOf("image/*")) },
+                                    onClear = { viewModel.setBrushTexture(context, null) },
+                                    modifier = Modifier.weight(1f)
+                                )
+                            }
+                            Text(
+                                "Tap to pick an image \u2022 Texture: white keeps paint, dark cuts it",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     }
-
-                    DrawingSettingRow("Softness", "${(uiState.brushSoftness * 100).toInt()}%", uiState.brushSoftness, { viewModel.setBrushSoftness(it) }, 0f..1f)
-                    DrawingSettingRow("Rotation", "${uiState.brushRotation.toInt()}\u00B0", uiState.brushRotation, { viewModel.setBrushRotation(it) }, 0f..360f)
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            "Anti-aliasing",
-                            style = MaterialTheme.typography.labelSmall,
-                            modifier = Modifier.weight(1f)
-                        )
-                        Switch(
-                            checked = uiState.antiAlias,
-                            enabled = builtInTip,
-                            onCheckedChange = { viewModel.setAntiAlias(it) }
-                        )
-                    }
                 }
             }
-
-            // Stroke: how those stamps are laid along the path.
-            item {
-                StudioSection(title = "Stroke", icon = Icons.Rounded.Gesture) {
-                    DrawingSettingRow("Spacing", "${(uiState.brushSpacing * 100).toInt()}%", uiState.brushSpacing, { viewModel.setBrushSpacing(it) }, 0.01f..4f)
-                    DrawingSettingRow("Flow", "${(uiState.brushFlow * 100).toInt()}%", uiState.brushFlow, { viewModel.setBrushFlow(it) }, 0f..1f)
-                    DrawingSettingRow("Opacity", "${(uiState.brushOpacity * 100).toInt()}%", uiState.brushOpacity, { viewModel.setBrushOpacity(it) }, 0f..1f)
-                    DrawingSettingRow("Follow Direction", "${(uiState.rotationFollow * 100).toInt()}%", uiState.rotationFollow, { viewModel.setRotationFollow(it) }, 0f..1f)
-                    // Steadies the cursor rather than the stamp, which is why it alone leaves
-                    // the preview above unchanged - that draws a path it was given.
-                    DrawingSettingRow("Smoothing", "${(uiState.brushSmoothing * 100).toInt()}%", uiState.brushSmoothing, { viewModel.setBrushSmoothing(it) }, 0f..1f)
-                }
-            }
-
-            // Jitter: the same brush, varied per stamp. Shape first, then colour - they read
-            // as two groups and were interleaved once already.
-            item {
-                StudioSection(title = "Jitter", icon = Icons.Rounded.Grain) {
-                    DrawingSettingRow("Size", "${(uiState.sizeJitter * 100).toInt()}%", uiState.sizeJitter, { viewModel.setSizeJitter(it) }, 0f..1f)
-                    // Degrees, not a fraction like its neighbours: the value is added straight
-                    // to the stamp's angle. Sharing their 0..1 range would cap the whole control
-                    // at one degree.
-                    DrawingSettingRow("Rotation", "${uiState.brushRotationJitter.toInt()}°", uiState.brushRotationJitter, { viewModel.setRotationJitter(it) }, 0f..180f)
-                    DrawingSettingRow("Scatter", "${(uiState.scatterJitter * 100).toInt()}%", uiState.scatterJitter, { viewModel.setScatterJitter(it) }, 0f..1f)
-                    DrawingSettingRow("Flow", "${(uiState.flowJitter * 100).toInt()}%", uiState.flowJitter, { viewModel.setFlowJitter(it) }, 0f..1f)
-
-                    HorizontalDivider(thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-
-                    // Small values are the useful ones: hue spans the whole wheel at 100%.
-                    DrawingSettingRow("Hue", "${(uiState.hueJitter * 100).toInt()}%", uiState.hueJitter, { viewModel.setHueJitter(it) }, 0f..1f)
-                    DrawingSettingRow("Saturation", "${(uiState.saturationJitter * 100).toInt()}%", uiState.saturationJitter, { viewModel.setSaturationJitter(it) }, 0f..1f)
-                    DrawingSettingRow("Value", "${(uiState.valueJitter * 100).toInt()}%", uiState.valueJitter, { viewModel.setValueJitter(it) }, 0f..1f)
-                }
-            }
-
-            // Smudge: the one thing here that reads the canvas instead of painting onto it.
-            item {
-                StudioSection(title = "Smudge", icon = Icons.Rounded.Colorize) {
-                    DrawingSettingRow("Amount", "${(uiState.smudge * 100).toInt()}%", uiState.smudge, { viewModel.setSmudge(it) }, 0f..1f)
-                    Column(modifier = Modifier.animateContentSize(animationSpec = MotionTokens.panelTransition)) {
-                        if (uiState.smudge > 0f) {
-                            DrawingSettingRow("Length", "${(uiState.smudgeLength * 100).toInt()}%", uiState.smudgeLength, { viewModel.setSmudgeLength(it) }, 0f..1f)
-                        }
-                    }
-                }
-            }
-
-            // Velocity: everything that answers to how fast the stroke is moving.
-            item {
-                StudioSection(title = "Velocity", icon = Icons.Rounded.Tune) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column {
-                            Text("Velocity Dynamics", style = MaterialTheme.typography.titleMedium)
-                            Text("React to stroke speed", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
-                        Switch(checked = uiState.velocityEnabled, onCheckedChange = { viewModel.setVelocityEnabled(it) })
-                    }
-
-                    // animateContentSize rather than AnimatedVisibility: this Column spaces its
-                    // children by 16dp, and a collapsing AnimatedVisibility keeps its slot until
-                    // the exit finishes - so that gap would sit at full height the whole way down
-                    // and then vanish in a single frame. Animating this wrapper own height leaves
-                    // no phantom slot behind.
-                    Column(
-                        modifier = Modifier.animateContentSize(animationSpec = MotionTokens.panelTransition),
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        if (uiState.velocityEnabled) {
-                            DrawingSettingRow("Size", "${if (uiState.velocitySizeAmount > 0) "+" else ""}${(uiState.velocitySizeAmount * 100).toInt()}%", uiState.velocitySizeAmount, { viewModel.setVelocitySize(it) }, -2f..2f)
-                            DrawingSettingRow("Flow", "${if (uiState.velocityFlowAmount > 0) "+" else ""}${(uiState.velocityFlowAmount * 100).toInt()}%", uiState.velocityFlowAmount, { viewModel.setVelocityFlow(it) }, -2f..2f)
-                            DrawingSettingRow("Scatter", "${if (uiState.velocityScatterAmount > 0) "+" else ""}${(uiState.velocityScatterAmount * 100).toInt()}%", uiState.velocityScatterAmount, { viewModel.setVelocityScatter(it) }, -2f..2f)
-                        }
-                    }
-                }
-            }
-
-            // Custom Assets
-            item {
-                StudioSection(title = "Custom Assets", icon = Icons.Rounded.Texture) {
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        AssetPickerCard(
-                            label = "Brush Tip",
-                            icon = Icons.Rounded.FilterTiltShift,
-                            bitmap = uiState.brushTipBitmap,
-                            onPick = { tipPicker.launch(arrayOf("image/*")) },
-                            onClear = { viewModel.setBrushTip(context, null) },
-                            modifier = Modifier.weight(1f)
-                        )
-                        AssetPickerCard(
-                            label = "Texture",
-                            icon = Icons.Rounded.Texture,
-                            bitmap = uiState.brushTextureBitmap,
-                            onPick = { texturePicker.launch(arrayOf("image/*")) },
-                            onClear = { viewModel.setBrushTexture(context, null) },
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
-                    Text(
-                        "Tap to pick an image \u2022 Texture: white keeps paint, dark cuts it",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-
         }
     }
 
@@ -681,39 +709,65 @@ fun AssetPickerCard(
     }
 }
 
+/** The Brush Studio's sections, one tab each. */
+private enum class StudioTab(val label: String, val icon: ImageVector) {
+    Tip("Tip", Icons.Rounded.Brush),
+    Stroke("Stroke", Icons.Rounded.Gesture),
+    Jitter("Jitter", Icons.Rounded.Grain),
+    Smudge("Smudge", Icons.Rounded.Colorize),
+    Velocity("Velocity", Icons.Rounded.Speed),
+    Assets("Assets", Icons.Rounded.Texture)
+}
+
+/** Room for a label on the left of a row, two lines of it if a name runs long. */
+private val StudioLabelWidth = 96.dp
+private val StudioValueWidth = 56.dp
+private val StudioRowGap = 2.dp
+
+/** The one style every row's label takes, slider, switch or chips alike. */
+private val StudioLabelStyle: androidx.compose.ui.text.TextStyle
+    @Composable get() = MaterialTheme.typography.bodyMedium
+
+/** One tab's settings, on the card they share. The tab already names them. */
 @Composable
-fun StudioSection(title: String, icon: androidx.compose.ui.graphics.vector.ImageVector, content: @Composable ColumnScope.() -> Unit) {
-    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(horizontal = 4.dp)) {
-            Icon(icon, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
-            Text(title, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
-        }
-        Surface(
-            shape = MaterialTheme.shapes.medium,
-            color = MaterialTheme.colorScheme.surface,
-            tonalElevation = 2.dp,
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f))
+private fun StudioCard(content: @Composable ColumnScope.() -> Unit) {
+    Surface(
+        shape = MaterialTheme.shapes.medium,
+        color = MaterialTheme.colorScheme.surface,
+        tonalElevation = 2.dp,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f))
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(StudioRowGap)
         ) {
-            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                content()
-            }
+            content()
         }
     }
 }
 
+/**
+ * A slider on one line: the name on the left, the track in the middle, the value on the
+ * right. Half the height of the name-and-value line over a track it replaced, which is what
+ * lets a whole section fit under the preview without a scroll.
+ */
 @Composable
 fun DrawingSettingRow(label: String, valueLabel: String, value: Float, onValueChange: (Float) -> Unit, range: ClosedFloatingPointRange<Float>) {
-    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-        Column(modifier = Modifier.weight(1f)) {
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                // Was labelSmall for both - 11sp, the smallest step on the scale, for the
-                // screen's actual content, which flattened ten rows into one weight and left
-                // no distinction between a parameter and its value.
-                Text(label, style = MaterialTheme.typography.titleSmall)
-                Text(valueLabel, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
-            }
-            Slider(value = value, onValueChange = onValueChange, valueRange = range)
-        }
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Text(label, style = StudioLabelStyle, maxLines = 2, modifier = Modifier.width(StudioLabelWidth))
+        Slider(value = value, onValueChange = onValueChange, valueRange = range, modifier = Modifier.weight(1f))
+        Text(
+            valueLabel,
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.primary,
+            textAlign = TextAlign.End,
+            maxLines = 1,
+            modifier = Modifier.width(StudioValueWidth)
+        )
     }
 }
 
