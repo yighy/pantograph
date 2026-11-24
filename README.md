@@ -20,7 +20,7 @@ Named after the 1821 drafting instrument that reproduced a drawing elsewhere as 
 - **Drag anywhere** on the canvas to move the cursor — the stroke happens at the reticle, not under your finger.
 - **Tap** the screen or **hold** the floating button to lower and raise the pen.
 - While the pen is down the cursor moves slower than your finger, for precision — how much is up to you.
-- Every tool you turn on shows as a **chip**: tap it to turn the tool off, drag it to adjust the tool's settings.
+- Every tool you turn on shows as a **chip**, with a line on how to use it until you start: tap the chip to turn the tool off, drag it to adjust the tool's settings.
 
 ### Satellite gates
 

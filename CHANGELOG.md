@@ -9,6 +9,8 @@ and versions follow [Semantic Versioning](https://semver.org/). Full notes for e
 
 ## [Unreleased]
 
+## [0.23.0] - 2026-11-24
+
 ### Added
 - **Tool hints**: turning a tool on says in a line how to use it, under its chip. The hint goes at
   the first press of the pen, or with a tap. Tool hints in Settings turns them off.
@@ -227,7 +229,8 @@ and versions follow [Semantic Versioning](https://semver.org/). Full notes for e
 
 Initial release.
 
-[Unreleased]: https://github.com/yighy/pantograph/compare/v0.22.0...HEAD
+[Unreleased]: https://github.com/yighy/pantograph/compare/v0.23.0...HEAD
+[0.23.0]: https://github.com/yighy/pantograph/compare/v0.22.0...v0.23.0
 [0.22.0]: https://github.com/yighy/pantograph/compare/v0.21.1...v0.22.0
 [0.21.1]: https://github.com/yighy/pantograph/compare/v0.21.0...v0.21.1
 [0.21.0]: https://github.com/yighy/pantograph/compare/v0.20.0...v0.21.0
