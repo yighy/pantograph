@@ -1,5 +1,5 @@
 <h1 align="center">Pantograph</h1>
-<p align=center><image src="app/src/main/ic_launcher-playstore.png" height="200" /></p>
+<p align=center><image src="assets/logo.png" height="140" /></p>
 <p align="center">A cursor-based drawing app for Android.</p>
 <p align="center">
 </p>
