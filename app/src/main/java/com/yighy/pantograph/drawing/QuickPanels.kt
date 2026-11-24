@@ -7,6 +7,10 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Colorize
+import androidx.compose.material.icons.rounded.LinearScale
+import androidx.compose.material.icons.rounded.Square
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -14,60 +18,140 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 
+/** A history swatch's cell, the touch target round its smaller disc. */
+private val SwatchCell = 36.dp
+
+/**
+ * The colour panel: the field and hue bar on the left, and on the right what is needed around
+ * them - the colour against the one the panel opened on, the recent colours, the eyedropper
+ * and the switch to sliders. Side by side, so the panel is half the height the stacked layout
+ * was and fills the width it is given instead of leaving it empty either side.
+ */
 @Composable
 fun ColorPickerContent(viewModel: DrawingViewModel, onDismiss: () -> Unit) {
     val selectedColor by remember(viewModel) { viewModel.uiState.map { it.selectedColor }.distinctUntilChanged() }.collectAsState(Color.Black)
     val colorHistory by remember(viewModel) { viewModel.uiState.map { it.colorHistory }.distinctUntilChanged() }.collectAsState(emptyList())
     val isSliderMode by remember(viewModel) { viewModel.uiState.map { it.isColorPickerSliderMode }.distinctUntilChanged() }.collectAsState(false)
     val isEyeDropperActive by remember(viewModel) { viewModel.uiState.map { it.isEyeDropperMode }.distinctUntilChanged() }.collectAsState(false)
+    // The colour in hand when the panel opened, to compare against and to go back to.
+    val openedWith = remember { viewModel.uiState.value.selectedColor }
+    // How many swatches a row of the history holds, from the width it is given. Measured
+    // rather than read from constraints: the row below asks its children for their intrinsic
+    // height, which a constraints-reading layout cannot answer.
+    var swatchColumns by remember { mutableIntStateOf(4) }
+    val swatchCellPx = with(LocalDensity.current) { SwatchCell.toPx() }
 
-    Column(modifier = Modifier.padding(8.dp), verticalArrangement = Arrangement.spacedBy(12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-        if (colorHistory.isNotEmpty()) {
-            Row(
-                modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
-                verticalAlignment = Alignment.CenterVertically
+    // The buttons sit in the bottom right corner of the whole panel, over a space kept free
+    // for them at the foot of the right half - so they are in the corner whichever half is
+    // the taller, and the panel takes its height from its halves as they animate between
+    // the field and the sliders. Sizing the row to its tallest child did the first and broke
+    // the second: that measure is the field's or the sliders' final height, so the panel
+    // jumped to it.
+    Box(modifier = Modifier.padding(4.dp)) {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            HSBPickerView(
+                initialColor = selectedColor,
+                isSliderMode = isSliderMode,
+                onColorChanged = { viewModel.selectColor(it) }
+            )
+
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                colorHistory.forEach { color ->
-                    // The swatch stays 32dp visually; the tappable box around it is 48dp so
-                    // the row still meets the minimum touch target without fat circles.
+                // New against old. The old half takes you back to it.
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(32.dp)
+                        .clip(MaterialTheme.shapes.small)
+                        .border(1.dp, MaterialTheme.colorScheme.outline, MaterialTheme.shapes.small)
+                ) {
+                    Box(Modifier.weight(1f).fillMaxHeight().background(selectedColor.copy(alpha = 1f)))
                     Box(
-                        modifier = Modifier
-                            .size(48.dp)
-                            .clickable { viewModel.selectColor(color) },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(32.dp)
-                                .clip(CircleShape)
-                                .background(color)
-                                .border(
-                                    width = if (color == selectedColor) 2.dp else 0.5.dp,
-                                    color = if (color == selectedColor) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
-                                    shape = CircleShape
-                                )
-                        )
+                        Modifier
+                            .weight(1f)
+                            .fillMaxHeight()
+                            .background(openedWith.copy(alpha = 1f))
+                            .clickable { viewModel.selectColor(openedWith) }
+                            .semantics { contentDescription = "Back to the previous colour" }
+                    )
+                }
+
+                // As many recent colours as two rows of this width hold, all in view.
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .onSizeChanged { swatchColumns = (it.width / swatchCellPx).toInt().coerceAtLeast(1) }
+                ) {
+                    val columns = swatchColumns
+                    colorHistory.take(columns * 2).chunked(columns).forEach { row ->
+                        Row {
+                            row.forEach { color ->
+                                Box(
+                                    modifier = Modifier
+                                        .size(SwatchCell)
+                                        .clickable { viewModel.selectColor(color) },
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(26.dp)
+                                            .clip(CircleShape)
+                                            .background(color)
+                                            .border(
+                                                width = if (color == selectedColor) 2.dp else 0.5.dp,
+                                                color = if (color == selectedColor) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
+                                                shape = CircleShape
+                                            )
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
-            }
-            HorizontalDivider(thickness = 0.5.dp, modifier = Modifier.padding(vertical = 4.dp))
-        }
 
-        HSBPickerView(
-            initialColor = selectedColor,
-            isSliderMode = isSliderMode,
-            isEyeDropperActive = isEyeDropperActive,
-            onModeToggle = { viewModel.setColorPickerSliderMode(it) },
-            onEyeDropperClick = { 
-                viewModel.toggleEyeDropper()
-                onDismiss()
-            },
-            onColorChanged = { viewModel.selectColor(it) }
-        )
+                Spacer(Modifier.height(48.dp))
+            }
+        }
+        Row(
+            modifier = Modifier.align(Alignment.BottomEnd),
+            horizontalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            IconButton(
+                onClick = {
+                    viewModel.toggleEyeDropper()
+                    onDismiss()
+                },
+                colors = IconButtonDefaults.iconButtonColors(
+                    containerColor = if (isEyeDropperActive) MaterialTheme.colorScheme.primaryContainer else Color.Transparent
+                )
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.Colorize,
+                    contentDescription = "Pick colour from canvas",
+                    modifier = Modifier.size(20.dp),
+                    tint = if (isEyeDropperActive) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.primary
+                )
+            }
+            IconButton(onClick = { viewModel.setColorPickerSliderMode(!isSliderMode) }) {
+                Icon(
+                    imageVector = if (isSliderMode) Icons.Rounded.Square else Icons.Rounded.LinearScale,
+                    contentDescription = if (isSliderMode) "Switch to colour field" else "Switch to sliders",
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            }
+        }
     }
 }
 
