@@ -54,7 +54,7 @@ away from the canvas.
 - Loupe: a magnified view of the canvas under the brush.
 
 **Canvas**
-- Layers with opacity, visibility, locking, reordering, duplicate and merge.
+- Layers with opacity, blend modes, alpha lock, visibility, locking, reordering, duplicate and merge.
 - Undo and redo — optionally returning the cursor to the undone stroke, and leaving it behind as a trace to redraw over.
 - Image import, a floating reference image, colour history.
 - Fullscreen, leaving only the floating button, its satellites and the chips.

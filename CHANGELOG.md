@@ -9,6 +9,29 @@ and versions follow [Semantic Versioning](https://semver.org/). Full notes for e
 
 ## [Unreleased]
 
+## [0.22.0] - 2026-11-24
+
+### Added
+- **Layer blend modes**: Normal, Multiply, Screen, Overlay, Add, Darken and Lighten, on screen, in
+  exports, thumbnails, timelapses and when merging down.
+- **Alpha lock**: paint lands only where a layer already has some. Erasing still erases.
+- Drag sideways on the sensitivity button to set draw sensitivity without opening anything.
+
+### Changed
+- The layers are a list with names, each showing its blend and opacity; the layer in hand opens up
+  in place to its settings.
+- The tools menu is compact: four tools to a row, sections that scroll sideways when they have more,
+  and a small arrow wherever there is more to scroll to.
+- Lazy, Chain, Fine, Loupe, Lasso fill and Path have icons of their own.
+- The colour panel lays the field and a vertical hue bar beside the recent colours, about half as
+  tall, with the previous colour to compare against and go back to.
+- The Brush Studio puts its sections on tabs, and each slider takes one line.
+- The sensitivity button shows the value, and its panel is a single slider.
+- Settings are grouped into cards; Updates, Experimental and About share one App card.
+
+### Fixed
+- Picking another layer no longer has it grow over its neighbours for a moment.
+
 ## [0.21.1] - 2026-11-17
 
 ### Fixed
@@ -196,7 +219,8 @@ and versions follow [Semantic Versioning](https://semver.org/). Full notes for e
 
 Initial release.
 
-[Unreleased]: https://github.com/yighy/pantograph/compare/v0.21.1...HEAD
+[Unreleased]: https://github.com/yighy/pantograph/compare/v0.22.0...HEAD
+[0.22.0]: https://github.com/yighy/pantograph/compare/v0.21.1...v0.22.0
 [0.21.1]: https://github.com/yighy/pantograph/compare/v0.21.0...v0.21.1
 [0.21.0]: https://github.com/yighy/pantograph/compare/v0.20.0...v0.21.0
 [0.20.0]: https://github.com/yighy/pantograph/compare/v0.19.0...v0.20.0
