@@ -74,7 +74,6 @@ fun DrawingScreen(
     
     var showBrushStudio by remember { mutableStateOf(false) }
     var showLayersPanel by remember { mutableStateOf(false) }
-    var editingLayerId by remember { mutableStateOf<Long?>(null) }
     // Lives here rather than inside the toolbar because the tool menu below also needs to
     // open panels, and a tap is the only reliable trigger for that.
     var activePanel by remember { mutableStateOf(ToolbarPanel.None) }
@@ -193,7 +192,7 @@ fun DrawingScreen(
                 }
             }
 
-            // Top Right Actions & Layers Panel
+            // Top right: the tools and layers buttons, the More menu, the chips and the layers list
             Box(
                 modifier = Modifier
                     .windowInsetsPadding(topSafeInsets)
@@ -205,58 +204,12 @@ fun DrawingScreen(
                     isFullscreen = isFullscreen,
                     showLayersPanel = showLayersPanel,
                     onToggleLayers = { showLayersPanel = !showLayersPanel },
-                    onSelectLayer = { editingLayerId = null },
-                    onEditLayer = { editingLayerId = it },
                     onNavigateToSettings = onNavigateToSettings,
                     imagePickerLauncher = imagePickerLauncher,
                     layerImportLauncher = layerImportLauncher
                 )
             }
 
-            // Layer Edit Overlay - Compact Side Panel
-            // Keep the last id so the exit animation can still render the panel
-            var lastEditingLayerId by remember { mutableStateOf<Long?>(null) }
-            if (editingLayerId != null) lastEditingLayerId = editingLayerId
-
-            // Slide only (no fade): keeps the elevation shadow alive during the animation
-            AnimatedVisibility(
-                visible = editingLayerId != null,
-                enter = slideInHorizontally(animationSpec = MotionTokens.slideEnter, initialOffsetX = { it }),
-                exit = slideOutHorizontally(animationSpec = MotionTokens.slideExit, targetOffsetX = { it })
-            ) {
-                // Invisible scrim: a tap anywhere outside the panel dismisses it
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .pointerInput(Unit) { detectTapGestures { editingLayerId = null } }
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(end = 90.dp) // Offset to stay clear of the layers panel
-                            .padding(top = 100.dp + WindowInsets.statusBars.asPaddingValues().calculateTopPadding()),
-                        contentAlignment = Alignment.TopEnd
-                    ) {
-                        lastEditingLayerId?.let { id ->
-                            LayerOptionsPanel(
-                                viewModel = viewModel,
-                                editingLayerId = id,
-                                onDismiss = { editingLayerId = null }
-                            )
-                        }
-                    }
-
-                    // While animating out, swallow all taps so the panel buttons can't be hit
-                    if (editingLayerId == null) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .pointerInput(Unit) { detectTapGestures { } }
-                        )
-                    }
-                }
-            }
-            
             // Hover/Draw Button
             HoverDrawButton(
                 viewModel = viewModel,

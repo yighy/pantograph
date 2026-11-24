@@ -2,7 +2,11 @@ package com.yighy.pantograph.drawing
 
 import androidx.compose.animation.*
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -43,8 +47,6 @@ fun LayersAndActionsSection(
     isFullscreen: Boolean = false,
     showLayersPanel: Boolean,
     onToggleLayers: () -> Unit,
-    onSelectLayer: (Long) -> Unit,
-    onEditLayer: (Long) -> Unit,
     onNavigateToSettings: () -> Unit,
     /** Opens the toolbar's Settings panel, for tools whose options live there. */
     // Array<String> because the reference picker is an OpenDocument contract: it takes a list
@@ -65,10 +67,6 @@ fun LayersAndActionsSection(
         if (!showMenu) showImportOptions = false
     }
     
-    val layers by remember(viewModel) { viewModel.uiState.map { it.layers }.distinctUntilChanged() }.collectAsState(emptyList())
-    val activeLayerId by remember(viewModel) { viewModel.uiState.map { it.activeLayerId }.distinctUntilChanged() }.collectAsState(-1L)
-    val layerBitmaps by remember(viewModel) { viewModel.uiState.map { it.layerBitmaps }.distinctUntilChanged() }.collectAsState(emptyMap())
-    val renderVersion by remember(viewModel) { viewModel.uiState.map { it.renderVersion }.distinctUntilChanged() }.collectAsState(0)
     val drawingMode by remember(viewModel) { viewModel.uiState.map { it.drawingMode }.distinctUntilChanged() }.collectAsState(DrawingMode.Freehand)
     val isLazyModeActive by remember(viewModel) { viewModel.uiState.map { it.isLazyModeActive }.distinctUntilChanged() }.collectAsState(false)
     // Derived in the flow rather than rebuilt from the fields above, so the row cannot drift
@@ -212,7 +210,7 @@ fun LayersAndActionsSection(
         // The tools button above only says that *something* is on; these say which, and take
         // it back off. Below the container rather than inside it, so the row is free to run
         // out into the empty canvas on its left instead of being penned into the width of
-        // three icon buttons. The layers rail simply starts lower when both are showing.
+        // three icon buttons. The layers list simply starts lower when both are showing.
         //
         // Nothing at all in plain freehand: the controls in this app live off the canvas, and
         // a strip that is empty most of the time would be chrome charging rent.
@@ -306,28 +304,15 @@ fun LayersAndActionsSection(
         }
 
         // Slide only, no fade: the fade forces an alpha compositing layer which drops the
-        // elevation shadow during the whole animation (it would pop in/out abruptly).
-        // Offset is 2x the panel width: the panel sits 16dp from the screen edge (plus
-        // shadow), so sliding by its own width alone leaves a sliver that then vanishes.
+        // elevation shadow for the whole animation, so it would pop in and out. Twice the
+        // panel's width, since it sits 16dp in from the edge with its shadow past that.
         AnimatedVisibility(
             visible = showLayersPanel && !isFullscreen,
             enter = slideInHorizontally(animationSpec = MotionTokens.slideEnter, initialOffsetX = { it * 2 }),
             exit = slideOutHorizontally(animationSpec = MotionTokens.slideExit, targetOffsetX = { it * 2 })
         ) {
             Box(modifier = Modifier.padding(top = 8.dp)) {
-                FloatingLayersPanel(
-                    layers = layers,
-                    activeLayerId = activeLayerId,
-                    layerBitmaps = layerBitmaps,
-                    renderVersion = renderVersion,
-                    onSelectLayer = {
-                        viewModel.selectLayer(it)
-                        onSelectLayer(it)
-                    },
-                    onEditLayer = { onEditLayer(it.id) },
-                    onAddLayer = { viewModel.addLayer("New Layer") },
-                    onReorder = { from, to -> viewModel.reorderLayers(from, to) }
-                )
+                LayersListPanel(viewModel)
             }
         }
     }
@@ -368,15 +353,19 @@ private fun ToolsMenuButton(
             expanded = showTools,
             onDismissRequest = { showTools = false },
             offset = DpOffset(0.dp, 8.dp),
-            modifier = Modifier.background(MaterialTheme.colorScheme.surfaceContainerHigh)
+            // The More menu's shape and colour, so the two menus up here read as one family.
+            shape = MaterialTheme.shapes.large,
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
         ) {
-            // Tools grouped by function: view first, then paint tools, then selection tools
+            // Tools grouped by function - view, paint, guide, select - with a rule between
+            // groups rather than a title over each: the icons and their names say enough.
+            // Kept tight: the menu is a quick pick over the drawing, and every row of air it
+            // carries is more of the canvas it covers.
             Column(
-                modifier = Modifier.padding(12.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                verticalArrangement = Arrangement.spacedBy(2.dp)
             ) {
-                Text("View", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
-                Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                ToolGrid {
                     ExtraToolItem("Fit Screen", false, Icons.Rounded.FitScreen) {
                         viewModel.requestFitToScreen()
                         showTools = false
@@ -393,10 +382,9 @@ private fun ToolsMenuButton(
                     }
                 }
 
-                HorizontalDivider(thickness = 0.5.dp, modifier = Modifier.padding(vertical = 2.dp))
+                HorizontalDivider(thickness = 0.5.dp, modifier = Modifier.padding(vertical = 3.dp))
 
-                Text("Paint", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
-                Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                ToolGrid {
                     ExtraToolItem(
                         "Fill", isBucketFill, Icons.Rounded.FormatColorFill,
                         isPinned = pinnedTools.contains(PinnableTool.Fill),
@@ -414,7 +402,7 @@ private fun ToolsMenuButton(
                         showTools = false
                     }
                     ExtraToolItem(
-                        "Lasso fill", drawingMode.isLassoFill, Icons.Rounded.FormatPaint,
+                        "Lasso fill", drawingMode.isLassoFill, LassoFillIcon,
                         isPinned = pinnedTools.contains(PinnableTool.LassoFill),
                         onTogglePin = { viewModel.togglePinnedTool(PinnableTool.LassoFill) }
                     ) {
@@ -422,7 +410,7 @@ private fun ToolsMenuButton(
                         showTools = false
                     }
                     ExtraToolItem(
-                        "Path", drawingMode is DrawingMode.Path, Icons.Rounded.Timeline,
+                        "Path", drawingMode is DrawingMode.Path, PathIcon,
                         isPinned = pinnedTools.contains(PinnableTool.Path),
                         onTogglePin = { viewModel.togglePinnedTool(PinnableTool.Path) }
                     ) {
@@ -431,14 +419,13 @@ private fun ToolsMenuButton(
                     }
                 }
 
-                HorizontalDivider(thickness = 0.5.dp, modifier = Modifier.padding(vertical = 2.dp))
+                HorizontalDivider(thickness = 0.5.dp, modifier = Modifier.padding(vertical = 3.dp))
 
                 // Lazy isn't a tool that paints - it steadies the cursor whichever brush is
                 // in hand - so it sits apart from the paint tools rather than among them.
-                Text("Guide", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
-                Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                ToolGrid {
                     ExtraToolItem(
-                        "Lazy", isLazyModeActive, Icons.Rounded.Cable,
+                        "Lazy", isLazyModeActive, LazyIcon,
                         isPinned = pinnedTools.contains(PinnableTool.Lazy),
                         onTogglePin = { viewModel.togglePinnedTool(PinnableTool.Lazy) }
                     ) {
@@ -457,7 +444,7 @@ private fun ToolsMenuButton(
                     }
                     // Anchor's other half, so beside it: lines from the end of the last one.
                     ExtraToolItem(
-                        "Chain", isChainActive, Icons.Rounded.Link,
+                        "Chain", isChainActive, ChainIcon,
                         isPinned = pinnedTools.contains(PinnableTool.Chain),
                         onTogglePin = { viewModel.togglePinnedTool(PinnableTool.Chain) }
                     ) {
@@ -465,7 +452,7 @@ private fun ToolsMenuButton(
                         showTools = false
                     }
                     ExtraToolItem(
-                        "Fine", isFineCursor, Icons.Rounded.CenterFocusStrong,
+                        "Fine", isFineCursor, FineIcon,
                         isPinned = pinnedTools.contains(PinnableTool.Fine),
                         onTogglePin = { viewModel.togglePinnedTool(PinnableTool.Fine) }
                     ) {
@@ -473,7 +460,7 @@ private fun ToolsMenuButton(
                         showTools = false
                     }
                     ExtraToolItem(
-                        "Loupe", isLoupeActive, Icons.Rounded.ZoomIn,
+                        "Loupe", isLoupeActive, LoupeIcon,
                         isPinned = pinnedTools.contains(PinnableTool.Loupe),
                         onTogglePin = { viewModel.togglePinnedTool(PinnableTool.Loupe) }
                     ) {
@@ -482,10 +469,9 @@ private fun ToolsMenuButton(
                     }
                 }
 
-                HorizontalDivider(thickness = 0.5.dp, modifier = Modifier.padding(vertical = 2.dp))
+                HorizontalDivider(thickness = 0.5.dp, modifier = Modifier.padding(vertical = 3.dp))
 
-                Text("Select", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
-                Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                ToolGrid {
                     ExtraToolItem(
                         "Lasso", drawingMode is DrawingMode.SelectLasso, Icons.Rounded.Polyline,
                         isPinned = pinnedTools.contains(PinnableTool.Lasso),
@@ -539,7 +525,10 @@ fun ExtraToolItem(
     onClick: () -> Unit
 ) {
     val haptics = LocalHapticFeedback.current
-    Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+    Column(
+        modifier = Modifier.width(ToolCellWidth),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
         Box {
             // The Text below is the accessible name, so the icon stays decorative.
             ToolToggleButton(
@@ -563,7 +552,59 @@ fun ExtraToolItem(
                 )
             }
         }
-        Text(label, style = MaterialTheme.typography.labelSmall)
+        Text(
+            label,
+            style = MaterialTheme.typography.labelSmall,
+            maxLines = 1,
+            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+        )
+    }
+}
+
+/** A tools menu cell's width and the gap between two: four of them make a section's width. */
+private val ToolCellWidth = 58.dp
+private val ToolCellGap = 4.dp
+private const val TOOLS_PER_ROW = 4
+private val ToolEdgeFade = 24.dp
+
+/**
+ * One section of the tools menu: one row, four tools wide, in fixed-width cells so the columns
+ * line up from one section to the next. A section with more than four scrolls sideways, and
+ * the edge that has more past it fades out under a small arrow, so the row says there is more
+ * without growing.
+ * The menu itself scrolls up and down when it outgrows the screen.
+ */
+@Composable
+private fun ToolGrid(content: @Composable () -> Unit) {
+    val scroll = rememberScrollState()
+    val fade = with(androidx.compose.ui.platform.LocalDensity.current) { ToolEdgeFade.toPx() }
+    Box {
+        Row(
+            modifier = Modifier
+                .width(ToolCellWidth * TOOLS_PER_ROW + ToolCellGap * (TOOLS_PER_ROW - 1))
+                // Offscreen, so the fade below cuts the row's own pixels rather than the menu's.
+                .graphicsLayer { compositingStrategy = androidx.compose.ui.graphics.CompositingStrategy.Offscreen }
+                .drawWithContent {
+                    drawContent()
+                    val transparent = Color.Transparent
+                    if (scroll.canScrollForward) drawRect(
+                        androidx.compose.ui.graphics.Brush.horizontalGradient(
+                            listOf(Color.Black, transparent), startX = size.width - fade, endX = size.width
+                        ),
+                        blendMode = androidx.compose.ui.graphics.BlendMode.DstIn
+                    )
+                    if (scroll.canScrollBackward) drawRect(
+                        androidx.compose.ui.graphics.Brush.horizontalGradient(
+                            listOf(transparent, Color.Black), startX = 0f, endX = fade
+                        ),
+                        blendMode = androidx.compose.ui.graphics.BlendMode.DstIn
+                    )
+                }
+                .horizontalScroll(scroll),
+            horizontalArrangement = Arrangement.spacedBy(ToolCellGap)
+        ) { content() }
+        ScrollHint(scroll.canScrollBackward, ScrollHintEdge.Start)
+        ScrollHint(scroll.canScrollForward, ScrollHintEdge.End)
     }
 }
 
