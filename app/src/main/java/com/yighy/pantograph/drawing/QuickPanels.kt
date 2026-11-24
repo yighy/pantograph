@@ -165,16 +165,29 @@ fun GlobalSettingsPanel(viewModel: DrawingViewModel) {
     // Tools' own values are not here any more: each lives on its tool's chip, which is showing
     // exactly while the value matters, and is marked as draggable. What is left is the one
     // setting that belongs to no tool.
-    Column {
-        // The label follows the tool rather than staying put: with Fine armed this is no longer
-        // a setting about drawing, it is what the cursor does at all times, and this row is the
-        // only place that says so.
-        SettingRow(
-            if (isFineCursor) "Cursor Sensitivity" else "Draw Sensitivity",
-            "${"%.1f".format(cursorSensitivity)}x",
-            cursorSensitivity,
-            { viewModel.setCursorSensitivity(it) },
-            0.1f..1.0f
+    // One line, as the Brush Studio lays out a slider: the name, the track, the value. The
+    // label follows the tool rather than staying put: with Fine armed this is no longer a
+    // setting about drawing, it is what the cursor does at all times, and this is the only
+    // place that says so.
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Text(
+            if (isFineCursor) "Cursor sensitivity" else "Draw sensitivity",
+            style = MaterialTheme.typography.bodyMedium
+        )
+        Slider(
+            value = cursorSensitivity,
+            onValueChange = { viewModel.setCursorSensitivity(it) },
+            valueRange = 0.1f..1.0f,
+            modifier = Modifier.weight(1f)
+        )
+        Text(
+            "${"%.1f".format(cursorSensitivity)}×",
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.primary
         )
     }
 }

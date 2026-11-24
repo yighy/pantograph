@@ -17,7 +17,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.yighy.pantograph.ui.theme.MotionTokens
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -196,14 +198,11 @@ fun DrawingToolbar(
                 // At most one of these is pressed, and it stays pressed for as long as its card is
                 // up. Colour at the far end, the one reached for most while drawing.
                 ButtonGroup {
-                    GroupedButton(
-                        GroupPosition.First,
-                        onClick = { toggle(ToolbarPanel.Settings) },
+                    SensitivityButton(
+                        viewModel = viewModel,
                         pressed = activePanel == ToolbarPanel.Settings,
-                        isToggle = true
-                    ) {
-                        Icon(Icons.Rounded.Tune, "Tool settings")
-                    }
+                        onToggle = { toggle(ToolbarPanel.Settings) }
+                    )
                     GroupedButton(
                         GroupPosition.Middle,
                         onClick = { toggle(ToolbarPanel.Brush) },

@@ -186,7 +186,7 @@ private fun ValueSegment(v: ChipValue, fillColor: Color, style: TextStyle, paddi
  * read. See [ReadoutPlacement] for where that is.
  */
 @Composable
-private fun ChipReadout(
+internal fun ChipReadout(
     icon: ImageVector,
     label: String,
     values: List<ChipValue>,
@@ -220,18 +220,18 @@ private fun ChipReadout(
 }
 
 /** Clearance above the point of contact: only the tip of the finger is up there. */
-private val READOUT_GAP_ABOVE = 36.dp
+internal val READOUT_GAP_ABOVE = 36.dp
 
 /** Clearance below it, where the rest of the finger follows. */
-private val READOUT_GAP_BELOW = 72.dp
+internal val READOUT_GAP_BELOW = 72.dp
 
-private val READOUT_MARGIN = 8.dp
+internal val READOUT_MARGIN = 8.dp
 
 /** Room to spare before the readout returns above - see [ReadoutPlacement.staysAbove]. */
-private val READOUT_HYSTERESIS = 16.dp
+internal val READOUT_HYSTERESIS = 16.dp
 
 /** How far past the middle the finger goes before the readout changes halves. */
-private val READOUT_SIDE_HYSTERESIS = 16.dp
+internal val READOUT_SIDE_HYSTERESIS = 16.dp
 
 /**
  * Hands [ReadoutPlacement] the finger in window coordinates. Which side is decided elsewhere,
@@ -241,7 +241,7 @@ private val READOUT_SIDE_HYSTERESIS = 16.dp
  * A data class so the popup only repositions when something has actually changed: it compares
  * providers to decide.
  */
-private data class AboveOrBelowFinger(
+internal data class AboveOrBelowFinger(
     val fingerX: Float,
     val fingerY: Float,
     val above: Boolean,
