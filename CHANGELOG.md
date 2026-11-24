@@ -9,6 +9,8 @@ and versions follow [Semantic Versioning](https://semver.org/). Full notes for e
 
 ## [Unreleased]
 
+## [0.23.1] - 2026-11-25
+
 ### Fixed
 - With Fill on, dragging the button straight after pressing it could leave the fill behind on a
   large canvas, where it is meant to be taken back.
@@ -233,7 +235,8 @@ and versions follow [Semantic Versioning](https://semver.org/). Full notes for e
 
 Initial release.
 
-[Unreleased]: https://github.com/yighy/pantograph/compare/v0.23.0...HEAD
+[Unreleased]: https://github.com/yighy/pantograph/compare/v0.23.1...HEAD
+[0.23.1]: https://github.com/yighy/pantograph/compare/v0.23.0...v0.23.1
 [0.23.0]: https://github.com/yighy/pantograph/compare/v0.22.0...v0.23.0
 [0.22.0]: https://github.com/yighy/pantograph/compare/v0.21.1...v0.22.0
 [0.21.1]: https://github.com/yighy/pantograph/compare/v0.21.0...v0.21.1
